@@ -7,9 +7,11 @@ import {
   ArrowRightLeft, 
   Activity, 
   RotateCcw, 
-  Receipt 
+  Receipt,
+  Navigation
 } from 'lucide-react';
 import { VehicleManagement } from './VehicleManagement';
+import { RouteManagement } from './RouteManagement';
 import { SalesmanRouteMapping } from './SalesmanRouteMapping';
 import { SalesmanStockAdding } from './SalesmanStockAdding';
 import { SalesmanStockRequests } from './SalesmanStockRequests';
@@ -30,6 +32,7 @@ export const SalesHub = ({
 
   const allTabs = [
     { key: 'sales-vehicles', label: 'Vehicle Adding', icon: Truck },
+    { key: 'sales-routes', label: 'Route Master', icon: Navigation },
     { key: 'sales-mappings', label: 'Salesman & Route Mapping', icon: MapPin },
     { key: 'sales-stock-adding', label: 'Stock Adding', icon: PackagePlus },
     { key: 'sales-stock-requests', label: 'Stock Requests', icon: Inbox },
@@ -92,8 +95,12 @@ export const SalesHub = ({
           <VehicleManagement />
         )}
 
+        {activeTab === 'sales-routes' && (
+          <RouteManagement onNavigateToMappings={() => handleTabClick('sales-mappings')} />
+        )}
+
         {activeTab === 'sales-mappings' && (
-          <SalesmanRouteMapping />
+          <SalesmanRouteMapping onNavigateToRoutes={() => handleTabClick('sales-routes')} />
         )}
 
         {activeTab === 'sales-stock-adding' && (

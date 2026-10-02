@@ -119,7 +119,7 @@ export const getFirstAccessibleMenu = (user) => {
   if (hasMenuPermission(user, ['products-list', 'stock-categories', 'products-price-groups', 'stock-total', 'stock-warehouses'], 'products-inventory')) return 'products-stock';
   if (hasPurchasesVendorsPermission(user) && hasMenuPermission(user, ['stock-vendors', 'stock-details', 'purchase-orders', 'warehouse-transfers', 'vendor-payments'], 'purchases-vendors')) return 'purchases-vendors';
   if (hasMenuPermission(user, ['customers-details', 'customers-price-mapping', 'customers-advance-booking', 'customers-credit-notes'], 'customers')) return 'customers';
-  if (hasMenuPermission(user, ['sales-vehicles', 'sales-mappings', 'sales-stock-adding', 'sales-stock-requests', 'sales-v2v-transfers', 'sales-live-track', 'sales-returns', 'sales-expenses'], 'sales')) return 'sales';
+  if (hasMenuPermission(user, ['sales-vehicles', 'sales-routes', 'sales-mappings', 'sales-stock-adding', 'sales-stock-requests', 'sales-v2v-transfers', 'sales-live-track', 'sales-returns', 'sales-expenses'], 'sales')) return 'sales';
   if (hasSubmenuPermission(user, 'invoices-list', 'invoices') || hasMenuPermission(user, ['invoices-list'], 'invoices')) return 'invoices-list';
   if (hasSubmenuPermission(user, 'reports')) return 'reports';
   if (hasMenuPermission(user, ['users-list', 'roles-list'], 'users')) return 'users';

@@ -190,12 +190,12 @@ export const InvoiceTemplateSheet = ({
   // Normalize Customer details
   const customer = {
     name: activeInvoice.customer_name || activeInvoice.customer?.name || 'Retail Customer',
-    address: activeInvoice.customer_address || activeInvoice.customer?.address || activeInvoice.place || activeInvoice.customer_place || 'Local Market Area',
+    address: activeInvoice.customer_address || activeInvoice.customer?.address || activeInvoice.place || activeInvoice.customer_place || '',
     city: activeInvoice.customer_city || activeInvoice.customer?.city || company.city,
     state: activeInvoice.customer_state || activeInvoice.customer?.state || company.state,
-    state_code: activeInvoice.customer_state_code || company.state_code || '32',
-    gstin: activeInvoice.customer_gstin || activeInvoice.customer?.gstin || (isInvoiceGst ? '4656YGHB456456' : ''),
-    contact: activeInvoice.customer_phone || activeInvoice.customer?.phone || activeInvoice.phone || activeInvoice.customer?.contact || '—'
+    state_code: activeInvoice.customer_state_code || '',
+    gstin: activeInvoice.customer_gstin || activeInvoice.customer?.gstin || '',
+    contact: activeInvoice.customer_phone || activeInvoice.customer?.phone || activeInvoice.phone || activeInvoice.customer?.contact || ''
   };
 
   // Dates & Metadata
@@ -356,9 +356,15 @@ export const InvoiceTemplateSheet = ({
                   {company.pincode && ` (${company.pincode})`}
                 </p>
                 <p className="company-print-contacts">
-                  <span>GSTIN: <strong>{company.gstin}</strong></span> | 
-                  <span>State: <strong>{company.state} (Code: {company.state_code})</strong></span> | 
-                  <span>Phone: {company.phone}</span>
+                  {company.gstin?.trim() ? (
+                    <span>GSTIN: <strong>{company.gstin.trim()}</strong>{company.state?.trim() || company.phone?.trim() ? ' | ' : ''}</span>
+                  ) : null}
+                  {company.state?.trim() ? (
+                    <span>State: <strong>{company.state.trim()}{company.state_code?.trim() ? ` (Code: ${company.state_code.trim()})` : ''}</strong>{company.phone?.trim() ? ' | ' : ''}</span>
+                  ) : null}
+                  {company.phone?.trim() ? (
+                    <span>Phone: {company.phone.trim()}</span>
+                  ) : null}
                 </p>
               </div>
             </div>
@@ -372,7 +378,7 @@ export const InvoiceTemplateSheet = ({
                   <tr><td>Invoice No:</td><td><strong>{invoiceNo}</strong></td></tr>
                   <tr><td>Invoice Date:</td><td><strong>{invoiceDate}</strong></td></tr>
                   <tr><td>Due Date:</td><td>{dueDate}</td></tr>
-                  <tr><td>Place of Supply:</td><td>{customer.state} ({customer.state_code})</td></tr>
+                  <tr><td>Place of Supply:</td><td>{customer.state || company.state || 'Local'}{customer.state_code?.trim() ? ` (${customer.state_code.trim()})` : (company.state_code?.trim() ? ` (${company.state_code.trim()})` : '')}</td></tr>
                   <tr><td>Reverse Charge:</td><td>No</td></tr>
                 </tbody>
               </table>
@@ -384,17 +390,21 @@ export const InvoiceTemplateSheet = ({
             <div className="buyer-box">
               <h4>Billed To (Customer Details):</h4>
               <p className="buyer-name">{customer.name} {activeInvoice.customer_code ? `(${activeInvoice.customer_code})` : ''}</p>
-              <p className="buyer-detail">{customer.address}</p>
+              {customer.address && <p className="buyer-detail">{customer.address}</p>}
               {customer.city && <p className="buyer-detail">{customer.city}</p>}
               {customer.contact && customer.contact !== '—' && (
                 <p className="buyer-detail">
                   Phone / Mobile: <strong style={{ color: '#0f172a' }}>{customer.contact}</strong>
                 </p>
               )}
-              <p className="buyer-detail">
-                GSTIN: <strong style={{ color: '#1e40af' }}>{customer.gstin || 'Unregistered (B2C)'}</strong>
-              </p>
-              <p className="buyer-detail">State: {customer.state} (Code: {customer.state_code})</p>
+              {customer.gstin?.trim() ? (
+                <p className="buyer-detail">
+                  GSTIN: <strong style={{ color: '#1e40af' }}>{customer.gstin.trim()}</strong>
+                </p>
+              ) : null}
+              {customer.state?.trim() ? (
+                <p className="buyer-detail">State: {customer.state.trim()}{customer.state_code?.trim() ? ` (Code: ${customer.state_code.trim()})` : ''}</p>
+              ) : null}
             </div>
 
             <div className="buyer-box">
@@ -686,9 +696,9 @@ export const InvoiceTemplateSheet = ({
               <img src={company.logo_url} alt="Logo" className="thermal-logo-img" />
             )}
             <h3 className="thermal-title">{company.company_name}</h3>
-            <p className="thermal-sub">{company.address_line1}, {company.city}</p>
-            <p className="thermal-sub">GSTIN: {company.gstin}</p>
-            <p className="thermal-sub">Tel: {company.phone}</p>
+            {company.address_line1 && <p className="thermal-sub">{company.address_line1}{company.city ? `, ${company.city}` : ''}</p>}
+            {company.gstin?.trim() ? <p className="thermal-sub">GSTIN: {company.gstin.trim()}</p> : null}
+            {company.phone?.trim() ? <p className="thermal-sub">Tel: {company.phone.trim()}</p> : null}
             <div style={{ marginTop: '4px' }}>
               <span style={{ 
                 display: 'inline-block', 
@@ -853,7 +863,7 @@ export const InvoiceTemplateSheet = ({
 {`+--------------------------------------------------------------------------------+
 | ${((company.legal_name || company.company_name).toUpperCase()).padEnd(78)} |
 | ${((company.address_line1 || '') + ', ' + (company.city || '')).padEnd(78)} |
-| GSTIN: ${(company.gstin || '').padEnd(20)} STATE: ${(company.state || 'KERALA') + ' (' + (company.state_code || '32') + ')'} PHONE: ${(company.phone || '').padEnd(16)} |
+| ${(company.gstin?.trim() ? `GSTIN: ${company.gstin.trim()}` : '').padEnd(26)} ${(company.state?.trim() ? `STATE: ${company.state.trim()}${company.state_code?.trim() ? ` (${company.state_code.trim()})` : ''}` : '').padEnd(26)} ${(company.phone?.trim() ? `PH: ${company.phone.trim()}` : '').padEnd(22)} |
 +--------------------------------------------------------------------------------+
 | INVOICE NO: ${invoiceNo.padEnd(20)} DATE: ${invoiceDate.padEnd(16)} DUE: ${dueDate.padEnd(16)} |
 | CUSTOMER  : ${customer.name.slice(0, 35).padEnd(35)} GSTIN: ${(customer.gstin || '').padEnd(20)} |
@@ -898,9 +908,15 @@ ${totalDiscount > 0 ? `| TOTAL DISCOUNT     : - INR ${totalDiscount.toFixed(2).p
                   {company.pincode && ` (${company.pincode})`}
                 </p>
                 <p className="company-print-contacts">
-                  <span>GSTIN: <strong>{company.gstin}</strong></span> | 
-                  <span>State: <strong>{company.state} (Code: {company.state_code})</strong></span> | 
-                  <span>Phone: {company.phone}</span>
+                  {company.gstin?.trim() ? (
+                    <span>GSTIN: <strong>{company.gstin.trim()}</strong>{company.state?.trim() || company.phone?.trim() ? ' | ' : ''}</span>
+                  ) : null}
+                  {company.state?.trim() ? (
+                    <span>State: <strong>{company.state.trim()}{company.state_code?.trim() ? ` (Code: ${company.state_code.trim()})` : ''}</strong>{company.phone?.trim() ? ' | ' : ''}</span>
+                  ) : null}
+                  {company.phone?.trim() ? (
+                    <span>Phone: {company.phone.trim()}</span>
+                  ) : null}
                 </p>
               </div>
             </div>
@@ -926,17 +942,21 @@ ${totalDiscount > 0 ? `| TOTAL DISCOUNT     : - INR ${totalDiscount.toFixed(2).p
             <div className="buyer-box">
               <h4>Credit Allowed To (Customer Details):</h4>
               <p className="buyer-name">{customer.name} {activeInvoice.customer_code ? `(${activeInvoice.customer_code})` : ''}</p>
-              <p className="buyer-detail">{customer.address}</p>
+              {customer.address && <p className="buyer-detail">{customer.address}</p>}
               {customer.city && <p className="buyer-detail">{customer.city}</p>}
               {customer.contact && customer.contact !== '—' && (
                 <p className="buyer-detail">
                   Phone / Mobile: <strong style={{ color: '#0f172a' }}>{customer.contact}</strong>
                 </p>
               )}
-              <p className="buyer-detail">
-                GSTIN: <strong style={{ color: '#1e40af' }}>{customer.gstin || 'Unregistered (B2C)'}</strong>
-              </p>
-              <p className="buyer-detail">State: {customer.state} (Code: {customer.state_code})</p>
+              {customer.gstin?.trim() ? (
+                <p className="buyer-detail">
+                  GSTIN: <strong style={{ color: '#1e40af' }}>{customer.gstin.trim()}</strong>
+                </p>
+              ) : null}
+              {customer.state?.trim() ? (
+                <p className="buyer-detail">State: {customer.state.trim()}{customer.state_code?.trim() ? ` (Code: ${customer.state_code.trim()})` : ''}</p>
+              ) : null}
             </div>
 
             <div className="buyer-box">
@@ -1070,9 +1090,15 @@ ${totalDiscount > 0 ? `| TOTAL DISCOUNT     : - INR ${totalDiscount.toFixed(2).p
                   {company.pincode && ` (${company.pincode})`}
                 </p>
                 <p className="company-print-contacts">
-                  <span>GSTIN: <strong>{company.gstin}</strong></span> | 
-                  <span>State: <strong>{company.state} (Code: {company.state_code})</strong></span> | 
-                  <span>Phone: {company.phone}</span>
+                  {company.gstin?.trim() ? (
+                    <span>GSTIN: <strong>{company.gstin.trim()}</strong>{company.state?.trim() || company.phone?.trim() ? ' | ' : ''}</span>
+                  ) : null}
+                  {company.state?.trim() ? (
+                    <span>State: <strong>{company.state.trim()}{company.state_code?.trim() ? ` (Code: ${company.state_code.trim()})` : ''}</strong>{company.phone?.trim() ? ' | ' : ''}</span>
+                  ) : null}
+                  {company.phone?.trim() ? (
+                    <span>Phone: {company.phone.trim()}</span>
+                  ) : null}
                 </p>
               </div>
             </div>
@@ -1086,7 +1112,7 @@ ${totalDiscount > 0 ? `| TOTAL DISCOUNT     : - INR ${totalDiscount.toFixed(2).p
                   <tr><td>PO Number:</td><td><strong>{activeInvoice.po_number || invoiceNo.replace('INV-', 'PO-')}</strong></td></tr>
                   <tr><td>PO Date:</td><td><strong>{activeInvoice.order_date ? formatInvoiceDateOnly(activeInvoice.order_date) : invoiceDate}</strong></td></tr>
                   <tr><td>Expected Date:</td><td><strong>{activeInvoice.expected_delivery_date ? formatInvoiceDateOnly(activeInvoice.expected_delivery_date) : 'Immediate / On Dispatch'}</strong></td></tr>
-                  <tr><td>Warehouse:</td><td>{activeInvoice.warehouse_name || 'Central Logistics Hub (Peenya)'}</td></tr>
+                  <tr><td>Warehouse:</td><td>{activeInvoice.warehouse_name || '—'}</td></tr>
                   <tr><td>Status:</td><td><strong style={{ color: '#15803d' }}>{activeInvoice.status || 'Approved'}</strong></td></tr>
                 </tbody>
               </table>
@@ -1097,19 +1123,19 @@ ${totalDiscount > 0 ? `| TOTAL DISCOUNT     : - INR ${totalDiscount.toFixed(2).p
           <div className="gst-buyer-grid">
             <div className="buyer-box">
               <h4>Vendor / Supplier Details:</h4>
-              <p className="buyer-name">{activeInvoice.vendor_name || 'Premier Foods & Beverages Wholesale'}</p>
-              <p className="buyer-detail">Vendor Code: <strong>{activeInvoice.vendor_code || 'VND-0012'}</strong></p>
-              <p className="buyer-detail">Address: {activeInvoice.vendor_address || 'Industrial Estate, Phase 2, Bangalore'}</p>
-              <p className="buyer-detail">GSTIN: <strong style={{ color: '#1e40af' }}>{activeInvoice.vendor_gstin || '29AABCP9012K1Z4'}</strong></p>
-              <p className="buyer-detail">Contact / Phone: {activeInvoice.vendor_phone || '+91 98450 11223'}</p>
+              <p className="buyer-name">{activeInvoice.vendor_name || 'Supplier'}</p>
+              {activeInvoice.vendor_code && <p className="buyer-detail">Vendor Code: <strong>{activeInvoice.vendor_code}</strong></p>}
+              {activeInvoice.vendor_address && <p className="buyer-detail">Address: {activeInvoice.vendor_address}</p>}
+              {activeInvoice.vendor_gstin && <p className="buyer-detail">GSTIN: <strong style={{ color: '#1e40af' }}>{activeInvoice.vendor_gstin}</strong></p>}
+              {activeInvoice.vendor_phone && <p className="buyer-detail">Contact / Phone: {activeInvoice.vendor_phone}</p>}
             </div>
 
             <div className="buyer-box">
               <h4>Ship To / Destination Warehouse:</h4>
-              <p className="buyer-name">{activeInvoice.warehouse_name || 'Central Logistics Depot (Peenya)'}</p>
-              <p className="buyer-detail">Delivery Address: Plot #12, Phase 1, Peenya Industrial Area</p>
-              <p className="buyer-detail">City &amp; State: Bengaluru, Karnataka - 560058</p>
-              <p className="buyer-detail">Inward Contact: Warehouse Manager (+91 80 2839 0000)</p>
+              <p className="buyer-name">{activeInvoice.warehouse_name || company.company_name || 'Main Warehouse Depot'}</p>
+              <p className="buyer-detail">Delivery Address: {company.address_line1 || company.city || 'Designated Receiving Gate'}</p>
+              {company.city && <p className="buyer-detail">City &amp; State: {company.city}{company.state ? `, ${company.state}` : ''}{company.pincode ? ` - ${company.pincode}` : ''}</p>}
+              {company.phone && <p className="buyer-detail">Inward Contact: {company.phone}</p>}
               <p className="buyer-detail">Delivery Instructions: <strong>F.O.R. Destination Gate Inspection</strong></p>
             </div>
           </div>

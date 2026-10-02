@@ -731,18 +731,32 @@ export const SettingsPage = ({ initialTab = 'company', onSettingsUpdate }) => {
               <div className="preview-mock-block">
                 <span className="mock-title">4. Statutory Clearance Summary:</span>
                 <div className="mock-gst-summary">
-                  <div className="gst-stat-row">
-                    <span>GSTIN:</span>
-                    <strong>{companyForm.gstin || '29ABCDE1234F1Z5'}</strong>
-                  </div>
-                  <div className="gst-stat-row">
-                    <span>State:</span>
-                    <span>{companyForm.state || 'Karnataka'} ({companyForm.state_code || '29'})</span>
-                  </div>
-                  <div className="gst-stat-row">
-                    <span>Bank:</span>
-                    <span>{companyForm.bank_name || 'HDFC Bank'} &bull; {companyForm.account_number ? `...${companyForm.account_number.slice(-4)}` : '1029'}</span>
-                  </div>
+                  {companyForm.gstin?.trim() ? (
+                    <div className="gst-stat-row">
+                      <span>GSTIN:</span>
+                      <strong>{companyForm.gstin.trim()}</strong>
+                    </div>
+                  ) : null}
+                  {(companyForm.state?.trim() || companyForm.state_code?.trim()) ? (
+                    <div className="gst-stat-row">
+                      <span>State:</span>
+                      <span>
+                        {companyForm.state?.trim() || ''}
+                        {companyForm.state_code?.trim() ? ` (Code: ${companyForm.state_code.trim()})` : ''}
+                      </span>
+                    </div>
+                  ) : null}
+                  {companyForm.bank_name?.trim() ? (
+                    <div className="gst-stat-row">
+                      <span>Bank:</span>
+                      <span>{companyForm.bank_name.trim()}{companyForm.account_number?.trim() ? ` • ...${companyForm.account_number.trim().slice(-4)}` : ''}</span>
+                    </div>
+                  ) : null}
+                  {!companyForm.gstin?.trim() && !companyForm.state?.trim() && !companyForm.state_code?.trim() && !companyForm.bank_name?.trim() && (
+                    <div style={{ color: '#94a3b8', fontSize: '13px', fontStyle: 'italic', padding: '6px 0' }}>
+                      No GSTIN, state code, or bank details configured yet.
+                    </div>
+                  )}
                 </div>
               </div>
 

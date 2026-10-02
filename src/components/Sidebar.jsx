@@ -82,6 +82,7 @@ export const Sidebar = ({ activeView, onViewChange, onLogout, user, companySetti
   const isSalesActive = [
     'sales',
     'sales-vehicles', 
+    'sales-routes',
     'sales-mappings', 
     'sales-stock-adding',
     'sales-stock-requests',
@@ -206,6 +207,7 @@ export const Sidebar = ({ activeView, onViewChange, onLogout, user, companySetti
         {/* 5. Sales */}
         {canShowGroup([
           'sales-vehicles', 
+          'sales-routes',
           'sales-mappings', 
           'sales-stock-adding',
           'sales-stock-requests',

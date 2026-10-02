@@ -56,7 +56,7 @@ export const PurchaseOrders = ({ user, onGoToInwardStock, companySettings: initi
     vendor_name: '',
     order_date: new Date().toISOString().split('T')[0],
     expected_delivery_date: '',
-    warehouse_name: 'Central Logistics Hub (Peenya)',
+    warehouse_name: '',
     status: 'Pending',
     notes: '',
     items: [
@@ -151,7 +151,7 @@ export const PurchaseOrders = ({ user, onGoToInwardStock, companySettings: initi
       po_number: po.po_number || 'PO-2026-NEW',
       order_date: po.order_date,
       expected_delivery_date: po.expected_delivery_date,
-      warehouse_name: po.warehouse_name || 'Central Logistics Hub (Peenya)',
+      warehouse_name: po.warehouse_name || '',
       vendor_name: po.vendor_name || ven?.supplier_company || 'Direct Supplier',
       vendor_code: ven?.vendor_code || '',
       vendor_gstin: po.vendor_gstin || ven?.gst_in || ven?.gstin || '',
@@ -217,7 +217,7 @@ export const PurchaseOrders = ({ user, onGoToInwardStock, companySettings: initi
         vendor_name: '',
         order_date: new Date().toISOString().split('T')[0],
         expected_delivery_date: '',
-        warehouse_name: 'Central Logistics Hub (Peenya)',
+        warehouse_name: '',
         status: 'Pending',
         notes: '',
         items: [
@@ -706,7 +706,7 @@ export const PurchaseOrders = ({ user, onGoToInwardStock, companySettings: initi
                         </option>
                       ))
                     ) : (
-                      <option value="Central Logistics Hub (Peenya)">Central Logistics Hub (Peenya)</option>
+                      <option value="">No warehouse registered</option>
                     )}
                   </select>
                 </div>

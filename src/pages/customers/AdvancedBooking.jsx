@@ -515,7 +515,7 @@ export const AdvancedBooking = () => {
                       {
                         product_name: b.product_name || 'Product',
                         product_sku: b.product_sku || '',
-                        warehouse_name: b.notes?.includes('[') ? b.notes.split('[')[1]?.split(']')[0] : 'Central Logistics Hub',
+                        warehouse_name: b.notes?.includes('[') ? b.notes.split('[')[1]?.split(']')[0] : '',
                         package_type: b.package_type || 'Loose Units',
                         qty: b.total_qty || 1,
                         unit_price: b.unit_price || 0,

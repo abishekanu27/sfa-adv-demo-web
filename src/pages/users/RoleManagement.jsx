@@ -98,6 +98,7 @@ export const WEB_MENUS_STRUCTURE = [
     icon: Truck,
     submenus: [
       { id: 'sales-vehicles', label: 'Vehicle Adding' },
+      { id: 'sales-routes', label: 'Route Master (Add / Edit Beats & Routes)' },
       { id: 'sales-mappings', label: 'Salesman & Route Mapping' },
       { id: 'sales-stock-adding', label: 'Stock Adding' },
       { id: 'sales-stock-requests', label: 'Stock Requests (Van Requisitions)' },

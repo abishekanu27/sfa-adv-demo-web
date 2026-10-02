@@ -210,8 +210,8 @@ export const MainLayout = ({ user, onLogout }) => {
                 <span className="nav-company-name">
                   {companySettings?.company_name || ''}
                 </span>
-                {companySettings?.gstin ? (
-                  <span className="nav-company-gstin">GSTIN: {companySettings.gstin}</span>
+                {companySettings?.gstin?.trim() ? (
+                  <span className="nav-company-gstin">GSTIN: {companySettings.gstin.trim()}</span>
                 ) : null}
               </div>
             </div>
@@ -339,6 +339,7 @@ export const MainLayout = ({ user, onLogout }) => {
           {/* 4. Sales Hub */}
           {(activeView === 'sales' || 
             activeView === 'sales-vehicles' || 
+            activeView === 'sales-routes' || 
             activeView === 'sales-mappings' || 
             activeView === 'sales-stock-adding' || 
             activeView === 'sales-stock-requests' || 

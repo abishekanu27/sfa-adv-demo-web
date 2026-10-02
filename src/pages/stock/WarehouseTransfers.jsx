@@ -41,9 +41,9 @@ export const WarehouseTransfers = ({ user, onGoToWarehouses }) => {
   // Form
   const [formData, setFormData] = useState({
     source_warehouse_id: '',
-    source_warehouse_name: 'Central Logistics Hub (Peenya)',
+    source_warehouse_name: '',
     target_warehouse_id: '',
-    target_warehouse_name: 'South Transit Hub (Electronic City)',
+    target_warehouse_name: '',
     product_id: '',
     product_name: '',
     product_sku: '',
@@ -67,9 +67,20 @@ export const WarehouseTransfers = ({ user, onGoToWarehouses }) => {
         fetchWarehousesApi(),
         fetchProductsApi()
       ]);
+      const whList = whRes || [];
       setTransfers(trRes || []);
-      setWarehouses(whRes || []);
+      setWarehouses(whList);
       setProducts(pRes || []);
+
+      if (whList.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          source_warehouse_id: prev.source_warehouse_id || whList[0]?.warehouse_id || '',
+          source_warehouse_name: prev.source_warehouse_name || whList[0]?.name || '',
+          target_warehouse_id: prev.target_warehouse_id || whList[1]?.warehouse_id || whList[0]?.warehouse_id || '',
+          target_warehouse_name: prev.target_warehouse_name || whList[1]?.name || whList[0]?.name || ''
+        }));
+      }
     } catch (err) {
       console.error(err);
       showNotification('Failed to load warehouse transfers', 'error');
@@ -114,10 +125,10 @@ export const WarehouseTransfers = ({ user, onGoToWarehouses }) => {
       showNotification('Warehouse stock transfer recorded successfully!');
       setShowModal(false);
       setFormData({
-        source_warehouse_id: '',
-        source_warehouse_name: warehouses[0]?.name || 'Central Logistics Hub (Peenya)',
-        target_warehouse_id: '',
-        target_warehouse_name: warehouses[1]?.name || 'South Transit Hub (Electronic City)',
+        source_warehouse_id: warehouses[0]?.warehouse_id || '',
+        source_warehouse_name: warehouses[0]?.name || '',
+        target_warehouse_id: warehouses[1]?.warehouse_id || warehouses[0]?.warehouse_id || '',
+        target_warehouse_name: warehouses[1]?.name || warehouses[0]?.name || '',
         product_id: '',
         product_name: '',
         product_sku: '',
@@ -406,11 +417,15 @@ export const WarehouseTransfers = ({ user, onGoToWarehouses }) => {
                       });
                     }}
                   >
-                    {warehouses.map((w) => (
-                      <option key={w.warehouse_id || w.id} value={w.name}>
-                        {w.name} ({w.code})
-                      </option>
-                    ))}
+                    {warehouses.length === 0 ? (
+                      <option value="">No warehouses registered - Add warehouse first</option>
+                    ) : (
+                      warehouses.map((w) => (
+                        <option key={w.warehouse_id || w.id} value={w.name}>
+                          {w.name} ({w.code})
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
 
@@ -428,11 +443,15 @@ export const WarehouseTransfers = ({ user, onGoToWarehouses }) => {
                       });
                     }}
                   >
-                    {warehouses.map((w) => (
-                      <option key={w.warehouse_id || w.id} value={w.name}>
-                        {w.name} ({w.code})
-                      </option>
-                    ))}
+                    {warehouses.length === 0 ? (
+                      <option value="">No warehouses registered - Add warehouse first</option>
+                    ) : (
+                      warehouses.map((w) => (
+                        <option key={w.warehouse_id || w.id} value={w.name}>
+                          {w.name} ({w.code})
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
 

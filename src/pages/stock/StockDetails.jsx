@@ -78,7 +78,7 @@ export const StockDetails = ({ user, initialProduct, onClearInitialProduct }) =>
           'Product Name': s.product_name,
           'SKU': s.product_sku || '',
           'Category': s.category_name || '',
-          'Warehouse': s.warehouse_name || 'Central Logistics Hub',
+          'Warehouse': s.warehouse_name || '',
           'Warehouse Code': s.warehouse_code || ''
         };
         if (canAccessVendors) {
@@ -113,9 +113,9 @@ export const StockDetails = ({ user, initialProduct, onClearInitialProduct }) =>
     try {
       const sampleData = [
         {
-          'Product Name': products[0]?.name || 'Premium Coconut Oil (1L Pouch)',
-          'Product SKU': products[0]?.sku || 'COCO-1L',
-          'Warehouse': warehouses[0]?.name || 'Central Logistics Hub (Peenya)',
+          'Product Name': products[0]?.name || 'Standard Product',
+          'Product SKU': products[0]?.sku || 'SKU-001',
+          'Warehouse': warehouses[0]?.name || 'Main Depot',
           ...(canAccessVendors ? { 'Vendor Name': vendors[0]?.supplier_company || 'Kerala Agro Industries' } : {}),
           'Package Type': 'Carton',
           'Package Quantity': 10,
@@ -730,7 +730,7 @@ export const StockDetails = ({ user, initialProduct, onClearInitialProduct }) =>
                       <div className="warehouse-badge-cell">
                         <div className="wh-badge-header">
                           <Warehouse size={13} className="wh-icon" />
-                          <span className="wh-name-text">{s.warehouse_name || 'Central Logistics Hub'}</span>
+                          <span className="wh-name-text">{s.warehouse_name || '—'}</span>
                         </div>
                         <div className="wh-badge-sub">
                           {s.warehouse_code && <span className="wh-code-pill">{s.warehouse_code}</span>}

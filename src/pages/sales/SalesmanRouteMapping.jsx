@@ -24,10 +24,11 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-export const SalesmanRouteMapping = () => {
+export const SalesmanRouteMapping = ({ onNavigateToRoutes }) => {
   const [mappings, setMappings] = useState([]);
   const [salesmen, setSalesmen] = useState([]);
   const [vehicles, setVehicles] = useState([]);
+  const [availableRoutes, setAvailableRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [districtFilter, setDistrictFilter] = useState('all');
@@ -59,19 +60,22 @@ export const SalesmanRouteMapping = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [mapRes, smRes, vehRes] = await Promise.all([
+      const [mapRes, smRes, vehRes, routeRes] = await Promise.all([
         fetch(`${API_BASE}/sales/mappings`),
         fetch(`${API_BASE}/sales/salesmen`),
-        fetch(`${API_BASE}/sales/vehicles`)
+        fetch(`${API_BASE}/sales/vehicles`),
+        fetch(`${API_BASE}/sales/routes`).catch(() => ({ json: () => ({ success: false }) }))
       ]);
 
       const mapData = await mapRes.json();
       const smData = await smRes.json();
       const vehData = await vehRes.json();
+      const routeData = await routeRes.json();
 
       if (mapData.success) setMappings(mapData.mappings || []);
       if (smData.success) setSalesmen(smData.salesmen || []);
       if (vehData.success) setVehicles(vehData.vehicles || []);
+      if (routeData.success) setAvailableRoutes(routeData.routes || []);
     } catch (err) {
       console.error('Error loading route mappings:', err);
       showNotification('Failed to load salesman route mappings', 'error');
@@ -282,7 +286,18 @@ export const SalesmanRouteMapping = () => {
           </p>
         </div>
 
-        <div className="header-actions">
+        <div className="header-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {onNavigateToRoutes && (
+            <button 
+              type="button" 
+              className="action-btn" 
+              onClick={onNavigateToRoutes}
+              style={{ background: '#f8fafc', color: '#1e293b', border: '1px solid #cbd5e1' }}
+            >
+              <Navigation size={15} />
+              <span>Route Master (+ Add Route)</span>
+            </button>
+          )}
           <button className="action-btn btn-primary" onClick={handleOpenAddModal}>
             <Plus size={15} />
             <span>Map Salesman to Vehicle & Route</span>
@@ -533,8 +548,57 @@ export const SalesmanRouteMapping = () => {
                     <strong>Route Territory Mapping</strong>
                   </div>
                   <p className="box-desc">
-                    Choose the Kerala District, then select the specific local areas / commercial beats for this salesman's delivery route.
+                    Choose an existing Route from Route Master or select a Kerala District and specific beats.
                   </p>
+
+                  {/* Optional Quick Route Selection */}
+                  {availableRoutes.length > 0 && (
+                    <div className="form-group" style={{ marginBottom: '14px', background: '#f8fafc', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <label style={{ margin: 0, fontSize: '12px', fontWeight: '600', color: '#1e40af' }}>
+                          ⚡ Quick-Fill from Route Master:
+                        </label>
+                        {onNavigateToRoutes && (
+                          <button
+                            type="button"
+                            onClick={() => { setShowModal(false); onNavigateToRoutes(); }}
+                            style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline' }}
+                          >
+                            + Manage Routes
+                          </button>
+                        )}
+                      </div>
+                      <select
+                        className="modal-select"
+                        defaultValue=""
+                        onChange={(e) => {
+                          const routeId = e.target.value;
+                          const r = availableRoutes.find(item => String(item.route_id) === String(routeId));
+                          if (r) {
+                            let parsed = [];
+                            try {
+                              parsed = Array.isArray(r.local_areas) ? r.local_areas : JSON.parse(r.local_areas || '[]');
+                            } catch {
+                              parsed = [];
+                            }
+                            setFormData(prev => ({
+                              ...prev,
+                              district: r.district || prev.district,
+                              local_areas: parsed.length > 0 ? parsed : prev.local_areas,
+                              route_name: r.route_name || prev.route_name
+                            }));
+                          }
+                        }}
+                      >
+                        <option value="">-- Choose Route from Master (Auto-fills below) --</option>
+                        {availableRoutes.map(r => (
+                          <option key={r.route_id} value={r.route_id}>
+                            {r.route_code}: {r.route_name} ({r.district})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   <div className="form-group">
                     <label>1. Select Kerala District *</label>

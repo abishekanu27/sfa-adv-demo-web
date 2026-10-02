@@ -1122,6 +1122,52 @@ export const fetchExpenseReportApi = async (params = {}) => {
   return await res.json();
 };
 
+// ==========================================
+// ROUTE MASTER APIS
+// ==========================================
+export const fetchRoutesApi = async (params = {}) => {
+  const query = new URLSearchParams();
+  if (params.search) query.append('search', params.search);
+  if (params.district && params.district !== 'all') query.append('district', params.district);
+  if (params.status && params.status !== 'all') query.append('status', params.status);
+
+  const res = await fetch(`${API_BASE}/sales/routes?${query.toString()}`);
+  if (!res.ok) throw new Error('Failed to fetch routes');
+  return await res.json();
+};
+
+export const createRouteApi = async (routeData) => {
+  const res = await fetch(`${API_BASE}/sales/routes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(routeData)
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to create route');
+  return data;
+};
+
+export const updateRouteApi = async (routeId, routeData) => {
+  const res = await fetch(`${API_BASE}/sales/routes/${routeId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(routeData)
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to update route');
+  return data;
+};
+
+export const deleteRouteApi = async (routeId) => {
+  const res = await fetch(`${API_BASE}/sales/routes/${routeId}`, {
+    method: 'DELETE'
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to delete route');
+  return data;
+};
+
+
 
 
 
