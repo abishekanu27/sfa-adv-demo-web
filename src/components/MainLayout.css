@@ -1,0 +1,207 @@
+/* ==========================================================================
+   ENTERPRISE MAIN LAYOUT STYLES (SIDEBAR + TOP NAV + CONTENT BODY)
+   ========================================================================== */
+
+.app-layout-root {
+  display: flex !important;
+  flex-direction: row !important;
+  min-height: 100vh;
+  width: 100%;
+  background-color: #f8fafc;
+  color: #0f172a;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden;
+  position: relative;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.app-layout-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* Main Content Wrapper */
+.layout-content-container {
+  flex: 1;
+  padding: 24px 32px 48px 32px;
+  max-width: 1800px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Toast Container */
+.enterprise-toast {
+  position: fixed;
+  top: 24px;
+  right: 28px;
+  bottom: auto;
+  left: auto;
+  max-width: 460px;
+  height: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: #0f172a;
+  color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25);
+  z-index: 9999;
+  font-size: 13.5px;
+  font-weight: 500;
+  border-left: 4px solid #3b82f6;
+  animation: toastSlideIn 0.25s ease forwards;
+}
+
+.enterprise-toast.success {
+  border-left-color: #10b981;
+}
+
+.enterprise-toast.error {
+  border-left-color: #ef4444;
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   TOP NAV COMPANY BRANDING (REPLACES GENERIC 'SALES FORCE ERP' ON TOP NAV)
+   ========================================================================== */
+
+.top-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.top-nav-company-brand {
+  display: flex;
+  align-items: center;
+  margin: 25px;
+  gap: 20px;
+  padding: 4px 12px 4px 6px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.top-nav-company-brand:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.nav-company-logo-img {
+  height: 60px;
+  max-width: 90px;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+.nav-company-badge {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(40, 93, 207, 0.2);
+}
+
+.nav-company-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-company-name {
+  font-size: 30px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.nav-company-gstin {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.app-layout-root.dark-theme .top-nav-company-brand {
+  background: #496aa0;
+  border-color: #334155;
+}
+
+.app-layout-root.dark-theme .nav-company-name {
+  color: #99b9da;
+}
+
+.app-layout-root.dark-theme .nav-company-gstin {
+  color: #8eacd6;
+}
+
+/* Top Nav Sync Button */
+.nav-sync-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.nav-sync-btn:hover:not(:disabled) {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.2);
+}
+
+.nav-sync-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.nav-sync-btn.syncing {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.spin-icon {
+  animation: spinSync 0.75s linear infinite;
+}
+
+@keyframes spinSync {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.app-layout-root.dark-theme .nav-sync-btn {
+  background: rgba(22, 163, 74, 0.15);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #4ade80;
+}
+

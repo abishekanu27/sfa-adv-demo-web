@@ -1,0 +1,311 @@
+.live-track-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.live-track-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.live-metric-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Dual Column Layout: Left Cards, Right Map */
+.live-track-workspace {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* Left: Salesman Cards List */
+.salesmen-cards-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 780px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.salesman-radar-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.salesman-radar-card:hover {
+  border-color: #93c5fd;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.salesman-radar-card.selected {
+  border-color: #2563eb;
+  background: #f8fafc;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.salesman-info-head h4 {
+  margin: 0 0 3px 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.salesman-vehicle-tag {
+  font-size: 11.5px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.live-pulse-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.live-pulse-badge.visit {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.live-pulse-badge.transit {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.live-pulse-badge.break {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse-ring 1.5s infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.6; }
+  100% { transform: scale(0.95); opacity: 1; }
+}
+
+.card-location-snippet {
+  font-size: 12.5px;
+  color: #334155;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.progress-section {
+  margin-bottom: 12px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: #2563eb;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.card-telemetry-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: #f1f5f9;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.telemetry-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.telemetry-lbl {
+  font-size: 10.5px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.telemetry-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Right: Map & Detail Box */
+.map-visualizer-container {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  min-height: 780px;
+}
+
+.map-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Real OpenStreetMap Tile Canvas */
+.osm-map-container {
+  flex: 1;
+  width: 100%;
+  min-height: 520px;
+  position: relative;
+  z-index: 1;
+}
+
+.osm-custom-div-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+.osm-truck-marker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+.osm-truck-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--marker-color, #2563eb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.osm-truck-marker:hover .osm-truck-icon,
+.osm-truck-marker.selected .osm-truck-icon {
+  transform: scale(1.25);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.4), 0 6px 16px rgba(0,0,0,0.45);
+}
+
+.osm-truck-badge {
+  position: absolute;
+  top: 40px;
+  white-space: nowrap;
+  background: rgba(15, 23, 42, 0.9);
+  color: #ffffff;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+/* Bottom Telemetry Drawer on Selected */
+.selected-agent-drawer {
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  padding: 16px 20px;
+}
+
+.drawer-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.agent-kpis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.agent-kpi-box {
+  background: #f8fafc;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.agent-kpi-box .lbl {
+  font-size: 11px;
+  color: #64748b;
+  display: block;
+}
+
+.agent-kpi-box .val {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+@media (max-width: 1100px) {
+  .live-track-workspace {
+    grid-template-columns: 1fr;
+  }
+  .map-visualizer-container {
+    min-height: 500px;
+  }
+}

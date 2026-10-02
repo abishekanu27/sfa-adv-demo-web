@@ -1,0 +1,1080 @@
+/* Advanced Booking Page Styles */
+.advanced-booking-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 4 Metric Cards */
+.booking-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.booking-metric-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.booking-metric-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.metric-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.metric-icon-wrap.blue { background-color: #eff6ff; color: #2563eb; }
+.metric-icon-wrap.green { background-color: #f0fdf4; color: #16a34a; }
+.metric-icon-wrap.purple { background-color: #f5f3ff; color: #7c3aed; }
+.metric-icon-wrap.amber { background-color: #fffbeb; color: #d97706; }
+
+.metric-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metric-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.metric-val.purple-text { color: #7c3aed; }
+.metric-val.green-text { color: #16a34a; }
+
+.metric-sub {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Controls Bar */
+.booking-controls-bar {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.status-filter-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filter-tag-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-right: 4px;
+}
+
+/* Table Card */
+.booking-table-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+}
+
+.booking-data-table {
+  width: 100%;
+  min-width: 1150px;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.booking-data-table th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.booking-data-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.booking-data-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Cell Specific Inner Containers */
+.customer-cell-inner,
+.product-cell-inner,
+.packaging-cell-inner,
+.rate-cell-inner,
+.advance-cell-inner,
+.date-cell-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.booking-code-badge {
+  display: inline-block;
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+.priority-tag {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.priority-tag.urgent {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fee2e2;
+}
+
+.priority-tag.high {
+  background-color: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fef3c7;
+}
+
+.meta-line {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+.sku-badge {
+  display: inline-block;
+  font-size: 10.5px;
+  font-family: monospace;
+  color: #2563eb;
+  background: #eff6ff;
+  padding: 1px 6px;
+  border-radius: 3px;
+  width: fit-content;
+}
+
+.salesman-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* Packaging Badges */
+.pkg-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-weight: 600;
+  font-size: 12px;
+  width: fit-content;
+}
+
+.pkg-badge.carton {
+  background-color: #f5f3ff;
+  color: #7c3aed;
+  border: 1px solid #ddd6fe;
+}
+
+.pkg-badge.box {
+  background-color: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+.pkg-badge.bag {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.pkg-badge.loose {
+  background-color: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.pkg-sub {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* Multi-Item Bundle in Advance Booking */
+.multi-bundle-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.multi-bundle-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.multi-bundle-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #334155;
+  background: #f8fafc;
+  padding: 3px 7px;
+  border-radius: 5px;
+  border: 1px solid #e2e8f0;
+}
+
+.multi-bundle-item-name {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.multi-bundle-wh-tag {
+  font-size: 10px;
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 600;
+  border: 1px solid #bae6fd;
+}
+
+.multi-bundle-qty-rate {
+  font-size: 11px;
+  color: #64748b;
+  margin-left: auto;
+  font-weight: 600;
+}
+
+.multi-items-pill {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #1d4ed8;
+  background-color: #dbeafe;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-top: 3px;
+  width: fit-content;
+}
+
+.total-amt {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.unit-rate {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.adv-paid {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #16a34a;
+}
+
+.bal-due {
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.bal-due.due {
+  color: #dc2626;
+}
+
+.bal-due.settled {
+  color: #16a34a;
+}
+
+.booked-on {
+  font-size: 10.5px;
+  color: #94a3b8;
+}
+
+/* Status Dropdown inside Table */
+.booking-status-dropdown {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.booking-status-dropdown.confirmed {
+  background-color: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.booking-status-dropdown.pending {
+  background-color: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+/* Interactive Booking Rows & Expand Indicator */
+.booking-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.booking-row:hover {
+  background-color: #f8fafc;
+}
+
+.booking-row.expanded {
+  background-color: #f0fdf4 !important;
+}
+
+.booking-code-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.expand-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  color: #64748b;
+  background: #f1f5f9;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.booking-row:hover .expand-indicator {
+  background-color: #e2e8f0;
+  color: #0f172a;
+}
+
+.booking-row.expanded .expand-indicator {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+/* Salesman Column */
+.salesman-cell-inner {
+  display: flex;
+  align-items: center;
+}
+
+.salesman-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  font-size: 12.5px;
+  color: #334155;
+  background: #f8fafc;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.salesman-icon {
+  color: #0284c7;
+}
+
+/* No. of Products Column (Integer) */
+.products-count-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.product-count-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 7px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.product-count-label {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Booking Date */
+.booking-date-text {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 12.5px;
+}
+
+/* Action Buttons (Edit, View, Delete) */
+.customer-actions-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.customer-actions-inner .table-icon-action {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: #64748b;
+}
+
+.customer-actions-inner .table-icon-action.view {
+  color: #0284c7;
+}
+
+.customer-actions-inner .table-icon-action.view:hover,
+.customer-actions-inner .table-icon-action.view.active {
+  background-color: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #0369a1;
+}
+
+.customer-actions-inner .table-icon-action.edit {
+  color: #d97706;
+}
+
+.customer-actions-inner .table-icon-action.edit:hover {
+  background-color: #fef3c7;
+  border-color: #fde68a;
+  color: #b45309;
+}
+
+.customer-actions-inner .table-icon-action.delete {
+  color: #ef4444;
+}
+
+.customer-actions-inner .table-icon-action.delete:hover {
+  background-color: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+/* Expanded Item List Drawer */
+.expanded-booking-row {
+  background-color: #f8fafc !important;
+}
+
+.expanded-booking-cell {
+  padding: 0 !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+}
+
+.booking-items-drawer {
+  margin: 8px 16px 14px 16px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #f1f5f9;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.drawer-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drawer-icon {
+  color: #2563eb;
+}
+
+.drawer-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.drawer-notes-tag {
+  font-size: 11.5px;
+  color: #475569;
+  background: #ffffff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+}
+
+
+
+.drawer-table-wrapper {
+  padding: 10px 16px 14px 16px;
+  overflow-x: auto;
+}
+
+.drawer-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.drawer-items-table th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.drawer-items-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+}
+
+.drawer-items-table tr:hover td {
+  background-color: #f8fafc;
+}
+
+.drawer-product-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drawer-sku-badge {
+  font-family: monospace;
+  font-size: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.drawer-warehouse-pill {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 600;
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid #bae6fd;
+}
+
+.drawer-package-text {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.drawer-items-table tfoot td {
+  background-color: #f8fafc;
+  border-top: 2px solid #e2e8f0;
+  border-bottom: none;
+  padding: 10px 12px;
+}
+
+.booking-status-dropdown.dispatched {
+  background-color: #f5f3ff;
+  color: #7c3aed;
+  border-color: #ddd6fe;
+}
+
+.booking-status-dropdown.delivered {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}
+
+.booking-status-dropdown.cancelled {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.booking-status-dropdown.returned {
+  background-color: #fff7ed;
+  color: #ea580c;
+  border-color: #ffedd5;
+}
+
+/* Modal Form Styles */
+.advance-booking-modal {
+  width: 650px;
+  max-width: 95vw;
+}
+
+.packaging-unit-selector-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px;
+  margin: 12px 0;
+}
+
+.section-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.pkg-radio-group {
+  display: flex;
+  gap: 10px;
+}
+
+.pkg-radio-pill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pkg-radio-pill input {
+  display: none;
+}
+
+.pkg-radio-pill.active {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #1d4ed8;
+  box-shadow: 0 0 0 1px #2563eb;
+}
+
+.total-calc-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background-color: #ffffff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: #1e40af;
+}
+
+.pricing-breakdown-box {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 14px;
+  margin: 12px 0;
+}
+
+.summary-calculation-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed #86efac;
+}
+
+.calc-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.calc-lbl {
+  font-size: 11px;
+  color: #475569;
+}
+
+.calc-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.calc-val.green-text { color: #16a34a; }
+.calc-val.red-text { color: #dc2626; }
+
+/* Toast */
+.adv-toast {
+  position: fixed;
+  top: 24px;
+  right: 28px;
+  bottom: auto;
+  left: auto;
+  width: auto;
+  max-width: 460px;
+  height: auto;
+  min-height: unset;
+  max-height: 120px;
+  z-index: 99999;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  animation: slideDownToast 0.25s ease-out;
+}
+
+.adv-toast.success { background-color: #10b981; color: #ffffff; }
+.adv-toast.error { background-color: #ef4444; color: #ffffff; }
+
+/* Dark Theme Support */
+.enterprise-dashboard-page.dark-theme .booking-metric-card,
+.enterprise-dashboard-page.dark-theme .booking-controls-bar,
+.enterprise-dashboard-page.dark-theme .booking-table-card {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.enterprise-dashboard-page.dark-theme .booking-data-table th {
+  background-color: #0f172a;
+  color: #94a3b8;
+  border-bottom-color: #334155;
+}
+
+.enterprise-dashboard-page.dark-theme .booking-data-table td {
+  border-bottom-color: #334155;
+  color: #cbd5e1;
+}
+
+.enterprise-dashboard-page.dark-theme .booking-data-table tbody tr:hover {
+  background-color: #1e293b;
+}
+
+.enterprise-dashboard-page.dark-theme .metric-val,
+.enterprise-dashboard-page.dark-theme .total-amt {
+  color: #f8fafc;
+}
+
+/* Selectable Customer Details Card */
+.selected-customer-details-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: fadeIn 0.2s ease;
+}
+
+.sc-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sc-name-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.sc-code {
+  font-size: 11px;
+  font-weight: 600;
+  background: #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #475569;
+}
+
+.sc-status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.sc-meta-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.sc-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+/* Selectable Product & Stock Details Card */
+.selected-product-details-card {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: fadeIn 0.2s ease;
+}
+
+.sp-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.sp-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sp-info-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sp-title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.sp-sku-tag {
+  font-size: 10.5px;
+  background: #e0e7ff;
+  color: #3730a3;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.sp-cat-tag {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.sp-stock-badge-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.sp-stock-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.3px;
+}
+
+.sp-stock-pill {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sp-stock-pill.in-stock {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.sp-stock-pill.low-stock {
+  background: #f59e0b;
+  color: #ffffff;
+}
+
+.sp-stock-pill.out-of-stock {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+/* Live Inventory Impact Calculator Banner */
+.inventory-impact-banner {
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.inventory-impact-banner.stock-ok {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+}
+
+.inventory-impact-banner.stock-alert {
+  background: #fef2f2;
+  border: 1.5px solid #f87171;
+}
+
+.impact-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  text-align: center;
+}
+
+.impact-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.impact-lbl {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.impact-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.impact-val.text-blue { color: #2563eb; }
+.impact-val.text-green { color: #16a34a; }
+.impact-val.text-red { color: #dc2626; }
+
+.impact-divider {
+  font-size: 16px;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.stock-warning-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #b91c1c;
+  background: #fee2e2;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+

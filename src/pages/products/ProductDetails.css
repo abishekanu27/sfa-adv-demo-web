@@ -1,0 +1,245 @@
+/* ==========================================================================
+   PRODUCT DETAILS STYLES
+   ========================================================================== */
+
+.product-details-page {
+  width: 100%;
+}
+
+.details-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.title-with-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.product-selector-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1px solid #edf2f7;
+  border-radius: 10px;
+  padding: 10px 18px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.selector-label-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.product-select-dropdown {
+  padding: 6px 12px;
+  font-size: 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background-color: #f8fafc;
+  color: #0f172a;
+  outline: none;
+  min-width: 240px;
+  cursor: pointer;
+}
+
+.product-select-dropdown:focus {
+  border-color: #2563eb;
+  background-color: #ffffff;
+}
+
+/* Metric Cards */
+.details-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.details-metric-card {
+  background: #ffffff;
+  border: 1px solid #edf2f7;
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.details-metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.04);
+}
+
+.details-metric-card .metric-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 6px;
+}
+
+.details-metric-card .metric-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+
+.details-metric-card .metric-value.green-text {
+  color: #10b981;
+}
+
+.details-metric-card .metric-sub {
+  font-size: 11.5px;
+  color: #94a3b8;
+}
+
+/* Specs Card */
+.details-specs-card {
+  background: #ffffff;
+  border: 1px solid #edf2f7;
+  border-radius: 12px;
+  padding: 24px 28px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  margin-bottom: 24px;
+}
+
+.specs-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 18px 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.specs-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px 28px;
+}
+
+.spec-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px dashed #f1f5f9;
+}
+
+.spec-name {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.spec-val {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.spec-val-badge {
+  background: #eff6ff;
+  color: #2563eb;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: monospace;
+}
+
+.spec-val-code {
+  background: #f8fafc;
+  color: #64748b;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-family: monospace;
+  border: 1px solid #e2e8f0;
+}
+
+.action-btn.btn-delete {
+  background: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #fecdd3;
+}
+
+.action-btn.btn-delete:hover {
+  background: #ffe4e6;
+  color: #be123c;
+  border-color: #fda4af;
+}
+
+/* Empty State Matching Reference Image 2 */
+.empty-details-card {
+  background: #ffffff;
+  border: 1px solid #edf2f7;
+  border-radius: 12px;
+  padding: 60px 24px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  margin-top: 10px;
+}
+
+.empty-pkg-icon {
+  color: #94a3b8;
+  margin-bottom: 14px;
+}
+
+.empty-details-card h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+}
+
+.empty-details-card p {
+  font-size: 13.5px;
+  color: #64748b;
+  max-width: 440px;
+  margin: 0 auto 20px auto;
+  line-height: 1.5;
+}
+
+/* Dark theme overrides */
+.enterprise-dashboard-page.dark-theme .product-selector-bar,
+.enterprise-dashboard-page.dark-theme .details-metric-card,
+.enterprise-dashboard-page.dark-theme .details-specs-card,
+.enterprise-dashboard-page.dark-theme .empty-details-card {
+  background: #131b2e;
+  border-color: #1e293b;
+}
+
+.enterprise-dashboard-page.dark-theme .product-select-dropdown {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+.enterprise-dashboard-page.dark-theme .details-metric-card .metric-value,
+.enterprise-dashboard-page.dark-theme .specs-card-title,
+.enterprise-dashboard-page.dark-theme .spec-val,
+.enterprise-dashboard-page.dark-theme .empty-details-card h3 {
+  color: #f8fafc;
+}
+
+.enterprise-dashboard-page.dark-theme .specs-card-title,
+.enterprise-dashboard-page.dark-theme .spec-item {
+  border-color: #1e293b;
+}

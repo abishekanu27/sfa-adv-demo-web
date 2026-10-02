@@ -1,0 +1,787 @@
+.stock-details-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Metrics Grid */
+.stock-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.stock-metric-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stock-metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Controls Bar */
+.stock-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 18px;
+}
+
+/* Table Card */
+.stock-table-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.stocks-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 12.5px;
+}
+
+.stocks-data-table thead tr {
+  background-color: #f8fafc;
+}
+
+.stocks-data-table th {
+  padding: 12px 14px;
+  font-weight: 600;
+  color: #64748b;
+  border-bottom: 1px solid #edf2f7;
+  white-space: nowrap;
+}
+
+.stocks-data-table td {
+  padding: 13px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.stock-id-badge {
+  display: inline-flex;
+  align-items: center;
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+}
+
+.date-cell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.vendor-name-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.packaging-breakdown-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.pkg-count {
+  color: #2563eb;
+}
+
+.pkg-cross {
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.pkg-cap {
+  color: #475569;
+}
+
+.total-qty-badge {
+  display: inline-flex;
+  align-items: center;
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid #bfdbfe;
+}
+
+.invoice-badge {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+/* Modal Calculation Summary Card */
+.stock-calc-summary-card {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin: 4px 0;
+}
+
+.calc-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #15803d;
+  margin-bottom: 8px;
+}
+
+.calc-body-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.calc-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.calc-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.calc-val-big {
+  font-size: 18px;
+  font-weight: 800;
+  color: #166534;
+  margin: 2px 0 1px 0;
+}
+
+.calc-val-big.green-text {
+  color: #059669;
+}
+
+.calc-formula {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.modal-dialog.stock-modal,
+.stock-modal {
+  max-width: 900px;
+  width: 95%;
+}
+
+.stock-toast {
+  position: fixed;
+  top: 24px;
+  right: 28px;
+  bottom: auto;
+  left: auto;
+  width: auto;
+  max-width: 460px;
+  height: auto;
+  min-height: unset;
+  max-height: 120px;
+  background: #10b981;
+  color: #ffffff;
+  padding: 12px 18px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  z-index: 99999;
+}
+
+.stock-toast.success {
+  background-color: #10b981;
+  color: #ffffff;
+}
+
+.stock-toast.error {
+  background-color: #ef4444;
+  color: #ffffff;
+}
+
+/* Dark Theme */
+.enterprise-dashboard-page.dark-theme .stock-metric-card,
+.enterprise-dashboard-page.dark-theme .stock-controls-bar,
+.enterprise-dashboard-page.dark-theme .stock-table-card {
+  background-color: #131b2e;
+  border-color: #1e293b;
+}
+
+.enterprise-dashboard-page.dark-theme .stocks-data-table thead tr {
+  background-color: #0b0f19;
+}
+
+.enterprise-dashboard-page.dark-theme .stocks-data-table th,
+.enterprise-dashboard-page.dark-theme .stocks-data-table td {
+  border-color: #1e293b;
+}
+
+.enterprise-dashboard-page.dark-theme .stock-calc-summary-card {
+  background-color: #0f271a;
+  border-color: #166534;
+}
+
+/* =========================================================
+   INVOICE / BILL DOCUMENT UPLOAD & VIEWER STYLES
+   ========================================================= */
+
+/* Clickable Table Badge with Download Action */
+.invoice-badge-clickable {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.invoice-badge-clickable:hover {
+  background-color: #dbeafe;
+  border-color: #3b82f6;
+  color: #1e40af;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.15);
+}
+
+.invoice-badge-clickable .inv-badge-icon {
+  color: #2563eb;
+}
+
+.invoice-badge-clickable .inv-badge-dl {
+  color: #059669;
+}
+
+/* Upload Section in Modal */
+.invoice-upload-group {
+  margin-top: 4px;
+}
+
+.invoice-upload-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.invoice-upload-label-row label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  margin: 0;
+}
+
+.upload-tip-text {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.invoice-upload-dropzone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 16px;
+  background-color: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.invoice-upload-dropzone:hover,
+.invoice-upload-dropzone.dragover {
+  border-color: #2563eb;
+  background-color: #eff6ff;
+}
+
+.dropzone-content-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.dropzone-icon-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: #e0e7ff;
+  color: #4338ca;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dropzone-primary-text {
+  font-size: 13px;
+  color: #1e293b;
+  margin: 0 0 2px 0;
+}
+
+.dropzone-primary-text strong {
+  color: #2563eb;
+}
+
+.dropzone-sub-text {
+  font-size: 11px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Attached File Preview Card */
+.invoice-attached-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+}
+
+.attached-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.file-badge-icon.pdf {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.file-badge-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.file-badge-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.attached-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.attached-filename {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+.attached-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.file-size-pill {
+  font-size: 10.5px;
+  background: #e2e8f0;
+  color: #475569;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.file-ready-pill {
+  font-size: 10.5px;
+  background: #dcfce7;
+  color: #15803d;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.attached-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.attached-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.attached-btn.preview {
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+.attached-btn.preview:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.attached-btn.remove {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  padding: 6px 8px;
+}
+
+.attached-btn.remove:hover {
+  background-color: #fecaca;
+}
+
+/* =========================================================
+   INVOICE VIEWER & DOWNLOAD MODAL
+   ========================================================= */
+.invoice-viewer-backdrop {
+  z-index: 99999;
+}
+
+.invoice-viewer-modal {
+  max-width: 900px;
+  width: 95%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.invoice-viewer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.viewer-title-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.viewer-badge-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background-color: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.viewer-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.viewer-subtitle {
+  font-size: 11.5px;
+  color: #64748b;
+  margin: 2px 0 0 0;
+}
+
+.viewer-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.viewer-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #334155;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.viewer-action-btn:hover {
+  background-color: #f8fafc;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.viewer-action-btn.primary {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.viewer-action-btn.primary:hover {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+/* Viewer Meta Strip */
+.viewer-meta-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  background-color: #f8fafc;
+  padding: 12px 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.meta-strip-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.meta-strip-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.meta-strip-val {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-top: 2px;
+}
+
+.meta-strip-val.code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.meta-strip-val.bold {
+  font-weight: 700;
+}
+
+.meta-strip-val.blue {
+  color: #2563eb;
+}
+
+.meta-strip-val.green {
+  color: #059669;
+}
+
+/* Document Viewport */
+.viewer-doc-viewport {
+  flex: 1;
+  min-height: 480px;
+  max-height: 60vh;
+  overflow: auto;
+  background-color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.viewer-pdf-iframe {
+  width: 100%;
+  height: 540px;
+  border: none;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.viewer-image-box {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.viewer-preview-img {
+  max-width: 100%;
+  max-height: 56vh;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.viewer-no-doc {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  gap: 8px;
+}
+
+.viewer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background-color: #ffffff;
+  border-top: 1px solid #e2e8f0;
+}
+
+.viewer-footer-info {
+  font-size: 11.5px;
+  color: #64748b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .viewer-meta-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Warehouse Cell Styles in Stock Table */
+.warehouse-badge-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wh-badge-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.wh-icon {
+  color: #0284c7;
+  flex-shrink: 0;
+}
+
+.wh-name-text {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.wh-badge-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.wh-code-pill {
+  display: inline-block;
+  background-color: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.wh-rack-note {
+  display: inline-block;
+  background-color: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+

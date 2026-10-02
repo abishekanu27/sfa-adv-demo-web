@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/SoftAir_SFA.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="SoftAir SFA" />
+    <title>SoftAir SFA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root">
+      <div id="app-preloader" style="
+        position: fixed;
+        inset: 0;
+        background: #0f172a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        color: #f8fafc;
+        z-index: 99999;
+      ">
+        <div style="position: relative; margin-bottom: 20px;">
+          <img 
+            src="/SoftAir_SFA.png" 
+            alt="SoftAir SFA" 
+            style="max-height: 75px; max-width: 240px; object-fit: contain; display: block;" 
+          />
+        </div>
+
+        <!-- Progress bar -->
+        <div style="
+          width: 200px;
+          height: 4px;
+          background: #1e293b;
+          border-radius: 9999px;
+          overflow: hidden;
+          position: relative;
+        ">
+          <div style="
+            position: absolute;
+            height: 100%;
+            width: 40%;
+            background: linear-gradient(90deg, #2563eb, #38bdf8);
+            border-radius: 9999px;
+            animation: preloaderBar 1.5s ease-in-out infinite;
+          "></div>
+        </div>
+        <span style="font-size: 11px; color: #475569; margin-top: 10px; font-weight: 500;">
+          Loading workspace...
+        </span>
+
+        <style>
+          @keyframes preloaderPulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.08); opacity: 0.1; }
+          }
+          @keyframes preloaderBar {
+            0% { left: -40%; width: 30%; }
+            50% { width: 60%; }
+            100% { left: 100%; width: 30%; }
+          }
+        </style>
+      </div>
+    </div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

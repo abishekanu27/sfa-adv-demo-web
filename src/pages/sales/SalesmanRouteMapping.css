@@ -1,0 +1,344 @@
+/* Salesman Route Mapping Styles */
+.salesman-mapping-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+/* Controls Bar */
+.mapping-controls-bar {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.district-filter-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-district-select {
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  font-size: 12.5px;
+  color: #0f172a;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Table Card */
+.mapping-table-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+}
+
+.route-mapping-table {
+  width: 100%;
+  min-width: 1100px;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.route-mapping-table th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.route-mapping-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.route-mapping-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Cell Inners */
+.salesman-cell-inner,
+.vehicle-cell-inner,
+.district-cell-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.salesman-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  color: #0f172a;
+}
+
+.reg-badge-mini {
+  display: inline-flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #0f172a;
+  border-radius: 4px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.mini-ind {
+  background: #1e3a8a;
+  color: #ffffff;
+  font-size: 7.5px;
+  font-weight: 800;
+  padding: 2px 3px;
+}
+
+.mini-reg {
+  padding: 2px 6px;
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 11px;
+  color: #0f172a;
+}
+
+.vehicle-model-sub {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.district-badge {
+  display: inline-block;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  font-weight: 600;
+  font-size: 11.5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.route-title-sub {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.areas-pill-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-width: 320px;
+}
+
+.area-beat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.days-chip-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.day-chip {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #047857;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.modal-dialog.route-mapping-modal,
+.route-mapping-modal {
+  width: 95%;
+  max-width: 920px;
+}
+
+.route-territory-builder-box {
+  background: linear-gradient(180deg, #f8faff 0%, #f0f7ff 100%);
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 16px;
+  margin: 14px 0;
+}
+
+.district-select {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1e3a8a;
+  border-color: #93c5fd;
+}
+
+.local-areas-selector-wrap {
+  margin-top: 14px;
+  background: #ffffff;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.areas-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.inline-toggle-btn {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.areas-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.area-checkbox-card {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #334155;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.area-checkbox-card:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.area-checkbox-card.selected {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+.checkbox-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.days-picker-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.day-picker-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.day-picker-btn.active {
+  background: #10b981;
+  border-color: #059669;
+  color: #ffffff;
+}
+
+/* Toast */
+.sales-mapping-toast {
+  position: fixed;
+  top: 24px;
+  right: 28px;
+  bottom: auto;
+  left: auto;
+  width: auto;
+  max-width: 460px;
+  height: auto;
+  min-height: unset;
+  max-height: 120px;
+  z-index: 99999;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  animation: slideDownToast 0.25s ease-out;
+}
+
+.sales-mapping-toast.success { background-color: #10b981; color: #ffffff; }
+.sales-mapping-toast.error { background-color: #ef4444; color: #ffffff; }
+
+/* Dark Theme */
+.enterprise-dashboard-page.dark-theme .mapping-controls-bar,
+.enterprise-dashboard-page.dark-theme .mapping-table-card {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.enterprise-dashboard-page.dark-theme .route-mapping-table th {
+  background-color: #0f172a;
+  color: #94a3b8;
+  border-bottom-color: #334155;
+}
+
+.enterprise-dashboard-page.dark-theme .route-mapping-table td {
+  border-bottom-color: #334155;
+  color: #cbd5e1;
+}
+
+.enterprise-dashboard-page.dark-theme .salesman-name-row {
+  color: #f8fafc;
+}

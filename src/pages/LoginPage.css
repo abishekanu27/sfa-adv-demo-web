@@ -1,0 +1,499 @@
+/* Clean Minimalist Vector Illustration Login UI */
+
+.reerui-login-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f1f5f9;
+  padding: 24px;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Framed App Window - Centered Single-Card Layout */
+.reerui-window-frame {
+  width: 100%;
+  max-width: 480px;
+  min-height: auto;
+  background-color: #f8fafc;
+  background-image: 
+    radial-gradient(at 10% 20%, rgba(224, 231, 255, 0.45) 0px, transparent 40%),
+    radial-gradient(at 90% 80%, rgba(219, 234, 254, 0.5) 0px, transparent 45%);
+  border: 1.5px solid #93c5fd;
+  border-radius: 24px;
+  box-shadow: 0 20px 45px -12px rgba(15, 23, 42, 0.1), 0 0 0 1px rgba(59, 130, 246, 0.08);
+  padding: 36px 36px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Top Brand Logo */
+.reerui-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+  width: 100%;
+  margin-bottom: 20px;
+  z-index: 10;
+}
+
+.reerui-brand-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.reerui-brand-logo {
+  height: 75px;
+  max-width: 260px;
+  object-fit: contain;
+}
+
+.reerui-brand-badge {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reerui-brand-text-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.reerui-brand-name {
+  font-size: 50px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #29478d;
+  line-height: 1.1;
+}
+
+.reerui-brand-name h3 {
+  margin: 0;
+  font-size: 38px;
+  font-weight: 800;
+  color: #29478d;
+  line-height: 1.1;
+}
+
+.reerui-brand-tagline {
+  font-size: 11.5px;
+  color: #64748b;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+/* Main Centered Content Container */
+.reerui-main-grid {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 10;
+}
+
+/* Centered Form Area */
+.reerui-form-side {
+  width: 100%;
+  max-width: 380px;
+  padding: 4px 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.reerui-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.8px;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.reerui-subtitle {
+  font-size: 13.5px;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin-bottom: 28px;
+  text-align: center;
+}
+
+/* Minimalist Underline Form */
+.reerui-form {
+  width: 100%;
+  text-align: left;
+}
+
+.reerui-field-group {
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.reerui-field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.reerui-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.reerui-underline-input {
+  width: 100%;
+  border: none;
+  border-bottom: 1.5px solid #cbd5e1;
+  background: transparent;
+  padding: 10px 32px 10px 0;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: #0f172a;
+  font-family: inherit;
+  transition: all 0.25s ease;
+  outline: none;
+}
+
+.reerui-underline-input::placeholder {
+  color: #cbd5e1;
+  font-weight: 400;
+}
+
+.reerui-underline-input:focus {
+  border-bottom-color: #3b82f6;
+  box-shadow: 0 1px 0 0 #3b82f6;
+}
+
+.reerui-toggle-pw {
+  position: absolute;
+  right: 0;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 6px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reerui-toggle-pw:hover {
+  color: #475569;
+}
+
+/* Blue Action Button - Centered Full-Width */
+.reerui-submit-btn {
+  background: #3b82f6;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 12px 36px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 8px 22px -3px rgba(59, 130, 246, 0.45);
+  transition: all 0.2s ease;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.reerui-submit-btn:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1.5px);
+  box-shadow: 0 10px 25px -3px rgba(37, 99, 235, 0.55);
+}
+
+.reerui-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.reerui-submit-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+/* Button Spinner */
+.reerui-btn-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.reerui-btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spinRing 0.75s linear infinite;
+}
+
+/* Success Loading State Once Logged In */
+.reerui-success-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px 24px;
+  width: 100%;
+  animation: fadeInLoader 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.reerui-loader-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.reerui-loader-logo {
+  height: 75px;
+  max-width: 260px;
+  object-fit: contain;
+  animation: pulseLogo 2s ease-in-out infinite;
+}
+
+.reerui-loader-spinner-ring {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 22px;
+}
+
+.reerui-loader-spinner-ring .reerui-ring-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3.5px solid rgba(59, 130, 246, 0.15);
+}
+
+.reerui-loader-spinner-ring .reerui-ring-head {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3.5px solid transparent;
+  border-top-color: #2563eb;
+  border-right-color: #38bdf8;
+  animation: spinRing 0.85s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+}
+
+.reerui-loader-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+  margin: 0 0 8px 0;
+  text-align: center;
+}
+
+.reerui-loader-subtitle {
+  font-size: 13.5px;
+  color: #64748b;
+  margin: 0 0 26px 0;
+  text-align: center;
+  font-weight: 500;
+  max-width: 340px;
+  line-height: 1.5;
+}
+
+.reerui-loader-progress-track {
+  width: 100%;
+  max-width: 280px;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.reerui-loader-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #2563eb, #38bdf8, #6366f1);
+  border-radius: 999px;
+  animation: progressFill 1.15s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+}
+
+@keyframes progressFill {
+  0% { width: 0%; }
+  35% { width: 45%; }
+  70% { width: 85%; }
+  100% { width: 100%; }
+}
+
+@keyframes pulseLogo {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(59, 130, 246, 0)); }
+  50% { transform: scale(1.04); filter: drop-shadow(0 4px 14px rgba(59, 130, 246, 0.28)); }
+}
+
+@keyframes spinRing {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeInLoader {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Copyright & Support Info - Centered Under Login Button */
+.reerui-login-footer {
+  margin-top: 28px;
+  font-size: 11.5px;
+  color: #64748b;
+  line-height: 1.6;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 4px 6px;
+  width: 100%;
+}
+
+.reerui-footer-sep {
+  color: #cbd5e1;
+  font-weight: 300;
+  user-select: none;
+}
+
+.reerui-footer-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s ease, text-decoration 0.15s ease;
+}
+
+.reerui-footer-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.reerui-footer-support {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Error Alert */
+.reerui-error-alert {
+  padding: 8px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 12.5px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Idle Timeout Alert */
+.reerui-idle-alert {
+  padding: 10px 14px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #b45309;
+  font-size: 12.5px;
+  font-weight: 500;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  line-height: 1.45;
+  box-shadow: 0 2px 8px -2px rgba(245, 158, 11, 0.15);
+}
+
+.reerui-idle-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.reerui-idle-close {
+  background: transparent;
+  border: none;
+  color: #92400e;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  border-radius: 4px;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.reerui-idle-close:hover {
+  opacity: 1;
+  background: rgba(180, 83, 9, 0.1);
+}
+
+
+/* Responsive */
+@media (max-width: 540px) {
+  .reerui-login-page {
+    padding: 16px;
+  }
+  .reerui-window-frame {
+    padding: 28px 20px 24px;
+    border-radius: 20px;
+  }
+  .reerui-title {
+    font-size: 28px;
+  }
+  .reerui-subtitle {
+    margin-bottom: 22px;
+  }
+  .reerui-login-footer {
+    font-size: 11px;
+    gap: 3px 5px;
+  }
+}

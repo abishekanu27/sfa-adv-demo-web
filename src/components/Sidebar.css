@@ -1,0 +1,181 @@
+/* ==========================================================================
+   LEFT NAVIGATION SIDEBAR STYLES (MATCHING SCREENSHOT 5)
+   ========================================================================== */
+
+.enterprise-sidebar {
+  width: 230px;
+  min-width: 230px;
+  background-color: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  user-select: none;
+  overflow-y: auto;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Brand Header */
+.sidebar-brand-header {
+  height: 64px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #f3f6f8;
+}
+
+.brand-logo-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 5px 5px rgba(99, 102, 241, 0.3);
+}
+
+.sidebar-brand-logo-img {
+  max-width: 180px;
+  max-height: 48px;
+  object-fit: contain;
+  background: transparent;
+}
+
+.brand-title-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.brand-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.brand-tag {
+  font-size: 30px;
+  font-weight: 600;
+  color: #315992;
+  letter-spacing: 0.05em;
+  
+}
+
+/* Navigation List */
+.sidebar-nav-container {
+  flex: 1;
+  padding: 14px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow-y: auto;
+}
+
+.nav-group-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-main-btn {
+  width: 100%;
+  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.nav-main-btn:hover {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.nav-btn-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-icon {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+/* Active Highlight */
+.nav-main-btn.active {
+  background-color: #eff6ff;
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.nav-main-btn.active .nav-icon {
+  color: #2563eb;
+}
+
+.active-group .group-title-highlight {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+/* Submenu List */
+.nav-submenu-list,
+.nav-submenus-list {
+  display: flex;
+  flex-direction: column;
+  padding-left: 28px;
+  margin-top: 2px;
+  margin-bottom: 4px;
+  gap: 2px;
+}
+
+.submenu-btn {
+  width: 100%;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  text-align: left;
+}
+
+.submenu-btn:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.submenu-btn.active-sub {
+  color: #2563eb;
+  font-weight: 700;
+  background-color: #eff6ff;
+}
+
+.submenu-bullet {
+  font-size: 14px;
+  line-height: 1;
+  color: #94a3b8;
+}
+
+.submenu-btn.active-sub .submenu-bullet {
+  color: #2563eb;
+}

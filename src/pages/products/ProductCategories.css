@@ -1,0 +1,236 @@
+/* ==========================================================================
+   PRODUCT CATEGORIES STYLES (MATCHING SCREENSHOT 1 & 2)
+   ========================================================================== */
+
+.product-categories-page {
+  width: 100%;
+}
+
+.categories-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+  margin-top: 10px;
+}
+
+/* Category Master Card */
+.category-master-card {
+  background: #ffffff;
+  border: 1px solid #edf2f7;
+  border-radius: 12px;
+  padding: 18px 20px 14px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.category-master-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+  border-color: #cbd5e1;
+}
+
+/* Top Row */
+.card-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.cat-top-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cat-tag-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #fef9c3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.cat-id-badge {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.cat-products-count-badge {
+  background: #fef3c7;
+  color: #b45309;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 9999px;
+}
+
+.view-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.view-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.view-toggle-btn.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.categories-table-card {
+  background: #ffffff;
+  border: 1px solid #edf2f7;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+/* Card Content */
+.card-body-content {
+  flex: 1;
+  margin-bottom: 14px;
+}
+
+.category-card-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.01em;
+}
+
+.category-card-subtext {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Divider & Browse Link */
+.card-bottom-divider {
+  height: 1px;
+  background-color: #f1f5f9;
+  margin-bottom: 12px;
+}
+
+.browse-products-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: #2563eb;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  transition: gap 0.15s ease, color 0.15s ease;
+}
+
+.browse-products-link:hover {
+  color: #1d4ed8;
+  gap: 7px;
+}
+
+.categories-loading-cell {
+  grid-column: 1 / -1;
+  padding: 40px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px dashed #e2e8f0;
+}
+
+.modal-dialog.category-modal,
+.category-modal {
+  max-width: 620px;
+  width: 95%;
+}
+
+.cat-name-input {
+  background: #f8fafc !important;
+}
+
+.form-hint-text {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.categories-toast {
+  position: fixed;
+  top: 24px;
+  right: 28px;
+  bottom: auto;
+  left: auto;
+  width: auto;
+  max-width: 460px;
+  height: auto;
+  min-height: unset;
+  max-height: 120px;
+  background: #10b981;
+  color: #ffffff;
+  padding: 12px 18px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  z-index: 99999;
+}
+
+.categories-toast.error {
+  background-color: #ef4444;
+}
+
+/* Dark Theme Support */
+.enterprise-dashboard-page.dark-theme .category-master-card,
+.enterprise-dashboard-page.dark-theme .categories-loading-cell {
+  background-color: #131b2e;
+  border-color: #1e293b;
+}
+
+.enterprise-dashboard-page.dark-theme .category-card-name {
+  color: #f8fafc;
+}
+
+.enterprise-dashboard-page.dark-theme .card-bottom-divider {
+  background-color: #1e293b;
+}

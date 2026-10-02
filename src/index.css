@@ -1,0 +1,473 @@
+:root {
+  /* Color Palette - Dark Nebula Theme (Default) */
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #121829;
+  --bg-card: rgba(18, 24, 41, 0.75);
+  --bg-card-hover: rgba(26, 35, 60, 0.85);
+  --bg-input: rgba(15, 22, 38, 0.8);
+  --bg-input-focus: rgba(20, 30, 52, 0.95);
+  
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(99, 102, 241, 0.6);
+  --border-hover: rgba(255, 255, 255, 0.16);
+
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #0f172a;
+
+  /* Vibrant Accents */
+  --accent-primary: #6366f1;
+  --accent-primary-hover: #4f46e5;
+  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+  --accent-glow: rgba(99, 102, 241, 0.35);
+
+  --success: #10b981;
+  --success-bg: rgba(16, 185, 129, 0.15);
+  --warning: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.15);
+  --danger: #ef4444;
+  --danger-bg: rgba(239, 68, 68, 0.15);
+  --info: #0ea5e9;
+
+  /* Shadows & Glassmorphism */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 35px rgba(99, 102, 241, 0.25);
+  
+  --backdrop-blur: blur(16px);
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Light Theme overrides */
+[data-theme='light'] {
+  --bg-primary: #f1f5f9;
+  --bg-secondary: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-card-hover: rgba(255, 255, 255, 0.95);
+  --bg-input: #f8fafc;
+  --bg-input-focus: #ffffff;
+
+  --border-subtle: rgba(148, 163, 184, 0.25);
+  --border-focus: rgba(99, 102, 241, 0.8);
+  --border-hover: rgba(148, 163, 184, 0.4);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+
+  --accent-glow: rgba(99, 102, 241, 0.2);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 25px 50px -12px rgba(15, 23, 42, 0.12);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #eaeff8;
+  color: #0f172a;
+  min-height: 100vh;
+  line-height: 1.5;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Atmospheric Background Glows */
+.ambient-background {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.45;
+  animation: floatOrb 12s infinite alternate ease-in-out;
+}
+
+.orb-1 {
+  width: 550px;
+  height: 550px;
+  background: radial-gradient(circle, #6366f1 0%, rgba(99, 102, 241, 0) 70%);
+  top: -10%;
+  left: -10%;
+}
+
+.orb-2 {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, #ec4899 0%, rgba(236, 72, 153, 0) 70%);
+  bottom: -15%;
+  right: -10%;
+  animation-duration: 16s;
+  animation-delay: -4s;
+}
+
+.orb-3 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, #06b6d4 0%, rgba(6, 182, 212, 0) 70%);
+  top: 40%;
+  left: 45%;
+  opacity: 0.25;
+  animation-duration: 18s;
+  animation-delay: -8s;
+}
+
+@keyframes floatOrb {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, -30px) scale(1.08); }
+  100% { transform: translate(-30px, 40px) scale(0.95); }
+}
+
+/* Animations */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* App Container */
+.app-container {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Glass Card Utility */
+.glass-panel {
+  background: var(--bg-card);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+/* Button & Input Base */
+button, input, select {
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* ==========================================================================
+   GLOBAL BULLETPROOF TOAST NOTIFICATION STYLES
+   Guarantees that no toast alert in any module ever expands or stretches
+   across the screen.
+   ========================================================================== */
+.stock-toast,
+.sales-stock-toast,
+.adv-toast,
+.veh-toast,
+.mapping-toast,
+.sales-mapping-toast,
+.customer-toast,
+.product-toast,
+.categories-toast,
+.price-group-toast,
+.vendor-toast,
+.enterprise-toast,
+.user-mgmt-toast,
+.role-mgmt-toast {
+  position: fixed !important;
+  top: 24px !important;
+  right: 28px !important;
+  bottom: auto !important;
+  left: auto !important;
+  width: auto !important;
+  max-width: 460px !important;
+  min-width: 240px !important;
+  height: auto !important;
+  min-height: unset !important;
+  max-height: 120px !important;
+  padding: 12px 18px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  z-index: 99999 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18) !important;
+  overflow: hidden !important;
+  pointer-events: auto !important;
+  animation: globalToastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes globalToastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.stock-toast.success,
+.sales-stock-toast.success,
+.adv-toast.success,
+.veh-toast.success,
+.mapping-toast.success,
+.sales-mapping-toast.success,
+.customer-toast.success,
+.product-toast.success,
+.categories-toast.success,
+.price-group-toast.success,
+.vendor-toast.success,
+.enterprise-toast.success,
+.user-mgmt-toast.success,
+.role-mgmt-toast.success {
+  background-color: #10b981 !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.stock-toast.error,
+.sales-stock-toast.error,
+.adv-toast.error,
+.veh-toast.error,
+.mapping-toast.error,
+.sales-mapping-toast.error,
+.customer-toast.error,
+.product-toast.error,
+.categories-toast.error,
+.price-group-toast.error,
+.vendor-toast.error,
+.enterprise-toast.error,
+.user-mgmt-toast.error,
+.role-mgmt-toast.error {
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+/* ==========================================================================
+   UNIVERSAL PRINT STYLESHEET (@media print)
+   Ensures Reports, Invoices, Receipts, and Statements print with 100% fidelity
+   ========================================================================== */
+@media print {
+  @page {
+    margin: 10mm;
+    size: auto;
+  }
+
+  /* Reset body and remove browser scroll containers */
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Unconstrain root and app layout */
+  .app-layout-root,
+  .app-layout-main,
+  .layout-content-container,
+  .ambient-background,
+  #root {
+    display: block !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    position: static !important;
+  }
+
+  /* Hide app chrome, sidebars, navigation, search, toasts, and buttons */
+  .enterprise-sidebar,
+  .enterprise-top-nav,
+  .top-loading-bar-container,
+  .reports-toast-banner,
+  .enterprise-toast,
+  .ambient-background,
+  .no-print,
+  .print-hidden,
+  .modal-close-btn,
+  .po-close-btn,
+  .inv-btn,
+  .po-btn-primary,
+  .po-btn-secondary,
+  .reports-header-actions,
+  .reports-tabs-bar,
+  .rep-filter-row,
+  .rep-action-btn,
+  .active-report-bar,
+  .pagination-container,
+  .table-actions-cell {
+    display: none !important;
+  }
+
+  /* Show formal printable headers */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Hide background content when printing from modal overlay */
+  .invoice-page-container > *:not(.modal-overlay),
+  .po-container > *:not(.po-modal-overlay),
+  .invoice-management-page > *:not(.modal-overlay),
+  .purchase-orders-page > *:not(.modal-overlay):not(.po-modal-overlay),
+  .credit-notes-page > *:not(.modal-overlay) {
+    display: none !important;
+  }
+
+  /* Printable modals: unconstrain overlay and card */
+  .modal-overlay,
+  .po-modal-overlay {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  .modal-content-card,
+  .po-modal-box {
+    border: none !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .modal-header,
+  .modal-footer,
+  .po-modal-header,
+  .po-modal-footer {
+    display: none !important;
+  }
+
+  .modal-body,
+  .po-modal-body {
+    padding: 0 !important;
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    background: transparent !important;
+  }
+
+  /* Reports Table formatting in Print */
+  .report-table-card,
+  .reports-hub-root,
+  .active-report-container {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    width: 100% !important;
+  }
+
+  .rep-table-wrapper {
+    overflow: visible !important;
+    border: none !important;
+  }
+
+  .rep-data-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+
+  .rep-data-table tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  .rep-data-table th,
+  .rep-data-table td {
+    border: 1px solid #cbd5e1 !important;
+    color: #000000 !important;
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+  }
+
+  .rep-data-table thead th {
+    background-color: #f1f5f9 !important;
+    font-weight: 700 !important;
+  }
+}
+
+

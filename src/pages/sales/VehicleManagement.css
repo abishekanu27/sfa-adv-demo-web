@@ -1,0 +1,288 @@
+/* Vehicle Management Styles */
+.vehicle-management-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+/* Metric Cards */
+.vehicle-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+}
+
+.vehicle-metric-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.vehicle-metric-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Controls Bar */
+.vehicle-controls-bar {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.vehicle-status-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Table Card */
+.vehicle-table-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+}
+
+.vehicle-data-table {
+  width: 100%;
+  min-width: 1000px;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.vehicle-data-table th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.vehicle-data-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.vehicle-data-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Inner wrappers */
+.model-cell-inner,
+.capacity-cell-inner,
+.driver-cell-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.veh-code-badge {
+  display: inline-block;
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+/* Indian High Security Registration Plate (HSRP) Style */
+.reg-number-plate {
+  display: inline-flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid #0f172a;
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.ind-strip {
+  background: #1e3a8a;
+  color: #ffffff;
+  font-size: 8.5px;
+  font-weight: 800;
+  padding: 3px 4px;
+  letter-spacing: 0.5px;
+}
+
+.reg-code {
+  padding: 3px 8px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 800;
+  font-size: 12px;
+  color: #0f172a;
+  letter-spacing: 1px;
+}
+
+.vehicle-type-tag {
+  display: inline-block;
+  font-size: 11px;
+  color: #2563eb;
+  font-weight: 500;
+  background-color: #eff6ff;
+  padding: 1px 6px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.capacity-val {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.capacity-sub {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.fuel-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.fuel-badge.diesel {
+  background-color: #f8fafc;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.fuel-badge.cng {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.fuel-badge.ev {
+  background-color: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+.meta-phone {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+/* Vehicle Status Pills */
+.vehicle-status-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.vehicle-status-pill.on-route {
+  background-color: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+.vehicle-status-pill.available {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.vehicle-status-pill.maintenance {
+  background-color: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+.modal-dialog.vehicle-modal,
+.vehicle-modal {
+  width: 95%;
+  max-width: 900px;
+}
+
+/* Toast */
+.veh-toast {
+  position: fixed;
+  top: 24px;
+  right: 28px;
+  bottom: auto;
+  left: auto;
+  width: auto;
+  max-width: 460px;
+  height: auto;
+  min-height: unset;
+  max-height: 120px;
+  z-index: 99999;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  animation: slideDownToast 0.25s ease-out;
+}
+
+.veh-toast.success { background-color: #10b981; color: #ffffff; }
+.veh-toast.error { background-color: #ef4444; color: #ffffff; }
+
+/* Dark Theme */
+.enterprise-dashboard-page.dark-theme .vehicle-metric-card,
+.enterprise-dashboard-page.dark-theme .vehicle-controls-bar,
+.enterprise-dashboard-page.dark-theme .vehicle-table-card {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.enterprise-dashboard-page.dark-theme .vehicle-data-table th {
+  background-color: #0f172a;
+  color: #94a3b8;
+  border-bottom-color: #334155;
+}
+
+.enterprise-dashboard-page.dark-theme .vehicle-data-table td {
+  border-bottom-color: #334155;
+  color: #cbd5e1;
+}
+
+.enterprise-dashboard-page.dark-theme .reg-number-plate {
+  background: #0f172a;
+  border-color: #475569;
+}
+
+.enterprise-dashboard-page.dark-theme .reg-code {
+  color: #f8fafc;
+}

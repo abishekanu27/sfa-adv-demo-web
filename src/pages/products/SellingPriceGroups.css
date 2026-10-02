@@ -1,0 +1,166 @@
+/* ==========================================================================
+   SELLING PRICE GROUPS STYLES
+   ========================================================================== */
+
+.selling-price-groups-page {
+  width: 100%;
+}
+
+.price-groups-table-card {
+  background: #ece9e9;
+  border: 1px solid #edf2f7;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.empty-price-groups-cell {
+  padding: 60px 20px !important;
+  text-align: center !important;
+}
+
+.products-count-badge {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  border: 1px solid #e2e8f0;
+}
+
+.configure-prices-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background-color: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.configure-prices-btn:hover {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+  border-color: #93c5fd;
+}
+
+.modal-dialog.price-group-modal,
+.price-group-modal {
+  max-width: 650px;
+  width: 95%;
+}
+
+.modal-dialog.price-matrix-modal,
+.price-matrix-modal {
+  max-width: 1040px !important;
+  width: 95vw !important;
+}
+
+.modal-subtitle {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  display: block;
+  margin-top: 3px;
+}
+
+.matrix-table-wrapper {
+  max-height: 60vh;
+  overflow-y: auto;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-top: 15px;
+}
+
+.matrix-table {
+  width: 100%;
+}
+
+.matrix-table th {
+  position: sticky;
+  top: 0;
+  background-color: #f8fafc;
+  z-index: 10;
+  white-space: nowrap;
+}
+
+.matrix-product-cell {
+  white-space: normal !important;
+  min-width: 200px;
+}
+
+.base-price-tag {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.custom-price-input-wrap {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 2px 8px;
+  width: 130px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.custom-price-input-wrap:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.currency-prefix {
+  color: #64748b;
+  font-weight: 600;
+  font-size: 13px;
+  margin-right: 4px;
+}
+
+.custom-price-input {
+  border: none !important;
+  outline: none !important;
+  padding: 4px 0 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  width: 100% !important;
+  background: transparent !important;
+}
+
+/* Toast */
+.price-group-toast {
+  position: fixed;
+  top: 24px;
+  right: 28px;
+  bottom: auto;
+  left: auto;
+  max-width: 460px;
+  height: auto;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  border-left: 4px solid #10b981;
+}
+
+.price-group-toast.error {
+  border-left-color: #ef4444;
+}

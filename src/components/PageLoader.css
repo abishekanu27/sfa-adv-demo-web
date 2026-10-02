@@ -1,0 +1,115 @@
+/* Top Progress Bar */
+.top-loading-bar-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 99999;
+  background: transparent;
+  pointer-events: none;
+}
+
+.top-loading-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #38bdf8, #6366f1);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.7), 0 0 5px rgba(37, 99, 235, 0.5);
+  animation: topBarLoading 1.2s ease-in-out infinite;
+  border-radius: 0 2px 2px 0;
+}
+
+@keyframes topBarLoading {
+  0% {
+    width: 0%;
+    margin-left: 0%;
+  }
+  50% {
+    width: 60%;
+    margin-left: 20%;
+  }
+  100% {
+    width: 100%;
+    margin-left: 100%;
+  }
+}
+
+/* Page / Container Loader */
+.page-loader-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  width: 100%;
+  min-height: 280px;
+  animation: fadeInLoader 0.25s ease-out forwards;
+}
+
+.page-loader-wrapper.full-page {
+  min-height: 70vh;
+}
+
+.loader-spinner-ring {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 16px;
+}
+
+.loader-spinner-ring .ring-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid rgba(59, 130, 246, 0.15);
+}
+
+.loader-spinner-ring .ring-head {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: #2563eb;
+  border-right-color: #38bdf8;
+  animation: spinRing 0.85s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+}
+
+.page-loader-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+}
+
+.page-loader-subtext {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* Dark mode adjustments */
+.dark-theme .page-loader-text {
+  color: #f1f5f9;
+}
+.dark-theme .page-loader-subtext {
+  color: #64748b;
+}
+.dark-theme .loader-spinner-ring .ring-track {
+  border-color: rgba(56, 189, 248, 0.15);
+}
+
+@keyframes spinRing {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeInLoader {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
