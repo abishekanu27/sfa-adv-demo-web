@@ -18,13 +18,18 @@ import {
   Layers,
   Zap,
   Coffee,
-  AlertTriangle
+  AlertTriangle,
+  Map,
+  Eye,
+  EyeOff
 } from 'lucide-react';
-import { fetchSalesmanLiveTrackingApi } from '../../services/api';
+import { fetchSalesmanLiveTrackingApi, fetchCustomersApi } from '../../services/api';
 import './SalesmanLiveTrack.css';
 
 export const SalesmanLiveTrack = () => {
   const [salesmen, setSalesmen] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [showCustomers, setShowCustomers] = useState(true);
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('All');
@@ -36,6 +41,7 @@ export const SalesmanLiveTrack = () => {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersGroupRef = useRef(null);
+  const customerMarkersGroupRef = useRef(null);
 
   const loadTrackingData = async (isManual = false) => {
     if (isManual) setIsRefreshing(true);
@@ -43,6 +49,25 @@ export const SalesmanLiveTrack = () => {
       const data = await fetchSalesmanLiveTrackingApi();
       setSalesmen(data || []);
       setLastSyncTime(new Date());
+
+      // Customers from live-tracking or fetchCustomersApi fallback
+      if (data && data._customers && data._customers.length > 0) {
+        setCustomers(data._customers);
+      } else {
+        try {
+          const cList = await fetchCustomersApi();
+          const valid = (cList || []).filter(c => c.latitude && c.longitude).map(c => ({
+            ...c,
+            latitude: parseFloat(c.latitude),
+            longitude: parseFloat(c.longitude),
+            outstanding_balance: parseFloat(c.outstanding_balance) || 0
+          }));
+          setCustomers(valid);
+        } catch (cErr) {
+          console.warn('Customer fetch fallback notice:', cErr);
+        }
+      }
+
       if (data && data.length > 0 && !selectedAgent) {
         setSelectedAgent(data[0]);
       } else if (selectedAgent && data) {
@@ -84,6 +109,7 @@ export const SalesmanLiveTrack = () => {
   const inVisit = salesmen.filter(s => s.current_status === 'In Shop Visit').length;
   const inTransit = salesmen.filter(s => s.current_status?.includes('Transit') || s.current_status?.includes('Route')).length;
   const totalSalesPunched = salesmen.reduce((sum, s) => sum + (parseFloat(s.today_sales_punched) || 0), 0);
+  const mappedCustomersCount = customers.filter(c => c.latitude && c.longitude).length;
 
   // Initialize Leaflet Map (Free OpenStreetMap)
   useEffect(() => {
@@ -103,6 +129,10 @@ export const SalesmanLiveTrack = () => {
 
       const markersGroup = L.layerGroup().addTo(map);
       markersGroupRef.current = markersGroup;
+
+      const customerMarkersGroup = L.layerGroup().addTo(map);
+      customerMarkersGroupRef.current = customerMarkersGroup;
+
       mapInstanceRef.current = map;
     }
 
@@ -114,18 +144,31 @@ export const SalesmanLiveTrack = () => {
     };
   }, []);
 
-  // Update Leaflet markers when salesmen or selectedAgent changes
+  // Update Leaflet markers when salesmen, customers, or selectedAgent changes
   useEffect(() => {
-    if (!mapInstanceRef.current || !markersGroupRef.current) return;
+    if (!mapInstanceRef.current || !markersGroupRef.current || !customerMarkersGroupRef.current) return;
     const markersGroup = markersGroupRef.current;
-    markersGroup.clearLayers();
+    const customerMarkersGroup = customerMarkersGroupRef.current;
 
+    markersGroup.clearLayers();
+    customerMarkersGroup.clearLayers();
+
+    const boundsPoints = [];
+
+    // Render Salesmen Markers
     filteredSalesmen.forEach((s) => {
       if (!s.coordinates?.lat || !s.coordinates?.lng) return;
       const lat = s.coordinates.lat;
       const lng = s.coordinates.lng;
+      boundsPoints.push([lat, lng]);
+
       const isSelected = selectedAgent?.salesman_id === s.salesman_id;
-      const color = s.current_status === 'In Shop Visit' ? '#059669' : s.current_status === 'Lunch Break' ? '#d97706' : '#2563eb';
+      const isLiveGps = s.is_live_gps !== false;
+      const color = s.current_status === 'In Shop Visit' 
+        ? '#059669' 
+        : s.current_status === 'Lunch Break' 
+        ? '#d97706' 
+        : isLiveGps ? '#2563eb' : '#64748b';
 
       const customHtml = `
         <div class="osm-truck-marker ${isSelected ? 'selected' : ''}" style="--marker-color: ${color};">
@@ -137,7 +180,7 @@ export const SalesmanLiveTrack = () => {
               <circle cx="18.5" cy="18.5" r="2.5"></circle>
             </svg>
           </div>
-          <div class="osm-truck-badge">${s.salesman_name.split(' ')[0]} (${s.speed_kmh || 0}km/h)</div>
+          <div class="osm-truck-badge">${s.salesman_name.split(' ')[0]} (${isLiveGps ? `${s.speed_kmh || 0}km/h` : 'Awaiting Fix'})</div>
         </div>
       `;
 
@@ -151,8 +194,13 @@ export const SalesmanLiveTrack = () => {
       const marker = L.marker([lat, lng], { icon }).addTo(markersGroup);
 
       marker.bindPopup(`
-        <div style="font-family: inherit; padding: 4px; min-width: 190px;">
-          <h4 style="margin: 0 0 2px 0; font-size: 14px; font-weight: 700; color: #0f172a;">${s.salesman_name}</h4>
+        <div style="font-family: inherit; padding: 4px; min-width: 200px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: #0f172a;">${s.salesman_name}</h4>
+            <span style="font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: ${isLiveGps ? '#dcfce7' : '#f1f5f9'}; color: ${isLiveGps ? '#15803d' : '#64748b'};">
+              ${isLiveGps ? 'LIVE GPS' : 'BEAT CENTER'}
+            </span>
+          </div>
           <span style="font-size: 11px; color: #64748b; display: block; margin-bottom: 6px;">
             ${s.vehicle_reg_no || 'Van'} • ${s.route_name || s.district || 'Kerala Beat'}
           </span>
@@ -164,6 +212,9 @@ export const SalesmanLiveTrack = () => {
           </div>
           <div style="font-size: 12px; margin-bottom: 3px;">
             <strong>Location:</strong> ${s.current_location || 'On Beat'}
+          </div>
+          <div style="font-size: 12px; margin-bottom: 3px;">
+            <strong>Last Ping:</strong> ${s.last_ping || 'Just now'}
           </div>
           <div style="font-size: 12px; margin-top: 6px; padding-top: 4px; border-top: 1px solid #e2e8f0; color: #059669; font-weight: 700;">
             Today's Sales: ₹${Number(s.today_sales_punched || 0).toLocaleString('en-IN')}
@@ -179,7 +230,69 @@ export const SalesmanLiveTrack = () => {
         marker.openPopup();
       }
     });
-  }, [filteredSalesmen, selectedAgent]);
+
+    // Render Customer Store Markers
+    if (showCustomers && customers && customers.length > 0) {
+      customers.forEach((c) => {
+        if (!c.latitude || !c.longitude) return;
+        boundsPoints.push([c.latitude, c.longitude]);
+
+        const customCustomerHtml = `
+          <div class="osm-customer-marker">
+            <div class="osm-customer-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+            </div>
+            <div class="osm-customer-badge">${c.name.split(' ')[0]}</div>
+          </div>
+        `;
+
+        const custIcon = L.divIcon({
+          html: customCustomerHtml,
+          className: 'osm-custom-div-icon',
+          iconSize: [28, 28],
+          iconAnchor: [14, 14]
+        });
+
+        const custMarker = L.marker([c.latitude, c.longitude], { icon: custIcon }).addTo(customerMarkersGroup);
+
+        custMarker.bindPopup(`
+          <div style="font-family: inherit; padding: 4px; min-width: 200px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <span style="font-size: 10px; font-weight: 800; color: #047857; background: #ecfdf5; padding: 2px 6px; border-radius: 4px;">CUSTOMER STORE</span>
+              <span style="font-size: 10.5px; font-weight: 700; color: #2563eb;">${c.customer_code || ''}</span>
+            </div>
+            <h4 style="margin: 0 0 2px 0; font-size: 14px; font-weight: 700; color: #0f172a;">${c.name}</h4>
+            <span style="font-size: 11px; color: #64748b; display: block; margin-bottom: 6px;">
+              ${c.local_area || c.route_area || c.place || 'Commercial Beat'}
+            </span>
+            ${c.phone ? `<div style="font-size: 12px; margin-bottom: 3px;"><strong>Phone:</strong> ${c.phone}</div>` : ''}
+            <div style="font-size: 12px; margin-bottom: 3px;">
+              <strong>GPS:</strong> ${Number(c.latitude).toFixed(5)}, ${Number(c.longitude).toFixed(5)}
+            </div>
+            <div style="font-size: 12px; margin-top: 6px; padding-top: 4px; border-top: 1px solid #e2e8f0; color: ${Number(c.outstanding_balance) > 0 ? '#dc2626' : '#059669'}; font-weight: 700;">
+              Outstanding Due: ₹${Number(c.outstanding_balance || 0).toLocaleString('en-IN')}
+            </div>
+            <div style="margin-top: 8px; text-align: right;">
+              <a href="https://www.google.com/maps?q=${c.latitude},${c.longitude}" target="_blank" rel="noopener noreferrer" style="font-size: 11px; color: #2563eb; text-decoration: none; font-weight: 700;">
+                Open in Google Maps &rarr;
+              </a>
+            </div>
+          </div>
+        `);
+      });
+    }
+
+    // Auto-fit bounds if we have points and not already focused on an agent
+    if (boundsPoints.length > 0 && mapInstanceRef.current && !selectedAgent) {
+      try {
+        const bounds = L.latLngBounds(boundsPoints);
+        mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 });
+      } catch {}
+    }
+  }, [filteredSalesmen, customers, showCustomers, selectedAgent]);
 
   // Center & zoom map to selected salesman
   const handleSelectAgent = (agent) => {
@@ -211,6 +324,29 @@ export const SalesmanLiveTrack = () => {
         </div>
 
         <div className="page-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button 
+            type="button"
+            className="action-btn"
+            style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '6px', 
+              padding: '8px 14px', 
+              background: showCustomers ? '#ecfdf5' : '#f8fafc', 
+              border: `1px solid ${showCustomers ? '#10b981' : '#cbd5e1'}`, 
+              color: showCustomers ? '#065f46' : '#64748b',
+              borderRadius: '6px', 
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: '0.85rem'
+            }}
+            onClick={() => setShowCustomers(prev => !prev)}
+            title="Toggle customer shop markers on the live tracking radar map"
+          >
+            {showCustomers ? <Eye size={14} color="#059669" /> : <EyeOff size={14} color="#64748b" />}
+            <span>{showCustomers ? `Customer Stores (${customers.length})` : `Show Customers (${customers.length})`}</span>
+          </button>
+
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', color: '#475569', cursor: 'pointer' }}>
             <input 
               type="checkbox" 
@@ -243,7 +379,7 @@ export const SalesmanLiveTrack = () => {
         </div>
       </div>
 
-      {/* Top 4 KPI Metrics */}
+      {/* Top 5 KPI Metrics */}
       <div className="live-track-metrics-grid">
         <div className="live-metric-card">
           <div className="metric-icon-wrap blue">
@@ -264,6 +400,17 @@ export const SalesmanLiveTrack = () => {
             <span className="metric-label">In Merchant Store Visits</span>
             <span className="metric-val" style={{ color: '#059669' }}>{inVisit} Salesmen</span>
             <span className="metric-sub">Punched retail check-in</span>
+          </div>
+        </div>
+
+        <div className="live-metric-card">
+          <div className="metric-icon-wrap emerald" style={{ background: '#ecfdf5', color: '#059669' }}>
+            <MapPin size={22} />
+          </div>
+          <div className="metric-info">
+            <span className="metric-label">Mapped Customer Outlets</span>
+            <span className="metric-val" style={{ color: '#059669' }}>{customers.length} Stores on Radar</span>
+            <span className="metric-sub">Registered GPS customer locations</span>
           </div>
         </div>
 
@@ -413,7 +560,11 @@ export const SalesmanLiveTrack = () => {
               Last pinged: {lastSyncTime.toLocaleTimeString()}
               </p>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', fontSize: '12px' }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', fontSize: '12px', flexWrap: 'wrap' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#047857', fontWeight: 600 }}>
+                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#059669', border: '1px solid #ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}></span>
+                Customer Stores ({customers.length})
+              </span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#059669', fontWeight: 600 }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#059669' }}></span>
                 In Store

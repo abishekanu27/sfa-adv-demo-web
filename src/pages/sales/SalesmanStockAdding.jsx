@@ -135,14 +135,20 @@ export const SalesmanStockAdding = () => {
     const defaultProd = currentProds[0];
     const autoBatch = `BATCH-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
+    const defaultPkg = defaultProd?.package_type || 'Box';
+    const defaultItemsPkg = defaultProd?.items_per_package || 10;
+    const defaultPrice = defaultPkg === 'Loose' 
+      ? (defaultProd?.selling_price || defaultProd?.cost_price || '')
+      : (defaultProd?.box_price || (defaultProd?.selling_price * defaultItemsPkg) || defaultProd?.cost_price || '');
+
     setFormData({
       salesman_id: defaultSm,
       product_id: defaultProd?.product_id || defaultProd?.id || '',
-      package_type: 'Carton',
+      package_type: defaultPkg,
       unit: defaultProd?.unit || 'Pcs',
       package_qty: 5,
-      items_per_package: 20,
-      unit_cost: defaultProd?.cost_price || defaultProd?.selling_price || '',
+      items_per_package: defaultItemsPkg,
+      unit_cost: defaultPrice,
       batch_no: autoBatch,
       status: 'Loaded',
       notes: ''
@@ -152,11 +158,18 @@ export const SalesmanStockAdding = () => {
 
   const handleProductSelect = (prodId) => {
     const selProd = products.find(p => String(p.product_id || p.id) === String(prodId));
+    const isLoose = formData.package_type === 'Loose';
+    const itemsPkg = selProd?.items_per_package || formData.items_per_package || 1;
+    const defaultRate = isLoose
+      ? (selProd?.selling_price || selProd?.cost_price || '')
+      : (selProd?.box_price || (parseFloat(selProd?.selling_price || 0) * itemsPkg) || selProd?.cost_price || '');
+
     setFormData(prev => ({
       ...prev,
       product_id: prodId,
       unit: selProd?.unit || 'Pcs',
-      unit_cost: selProd ? (selProd.cost_price || selProd.selling_price) : prev.unit_cost
+      items_per_package: isLoose ? prev.items_per_package : itemsPkg,
+      unit_cost: defaultRate
     }));
   };
 
@@ -173,7 +186,9 @@ export const SalesmanStockAdding = () => {
   const remainingWarehouseStock = availableWarehouseStock - calculatedTotalUnits;
   const isStockOverAllocated = calculatedTotalUnits > availableWarehouseStock;
 
-  const calculatedTotalValue = calculatedTotalUnits * (parseFloat(formData.unit_cost) || 0);
+  const calculatedTotalValue = formData.package_type === 'Loose'
+    ? (calculatedTotalUnits * (parseFloat(formData.unit_cost) || 0))
+    : ((parseFloat(formData.package_qty) || 0) * (parseFloat(formData.unit_cost) || 0));
 
   const handleSaveStock = async (e) => {
     e.preventDefault();
@@ -673,7 +688,20 @@ export const SalesmanStockAdding = () => {
                           name="package_type"
                           value={pkg}
                           checked={formData.package_type === pkg}
-                          onChange={(e) => setFormData({ ...formData, package_type: e.target.value })}
+                          onChange={(e) => {
+                            const newPkg = e.target.value;
+                            const isLoose = newPkg === 'Loose';
+                            const itemsPkg = isLoose ? 1 : (selectedProduct?.items_per_package || formData.items_per_package || 10);
+                            const newRate = isLoose
+                              ? (selectedProduct?.selling_price || selectedProduct?.cost_price || '')
+                              : (selectedProduct?.box_price || (parseFloat(selectedProduct?.selling_price || 0) * itemsPkg) || selectedProduct?.cost_price || '');
+                            setFormData({
+                              ...formData,
+                              package_type: newPkg,
+                              items_per_package: isLoose ? formData.items_per_package : itemsPkg,
+                              unit_cost: newRate
+                            });
+                          }}
                         />
                         <span>{pkg}</span>
                       </label>
@@ -747,7 +775,11 @@ export const SalesmanStockAdding = () => {
                 {/* 4. Valuation & Batch */}
                 <div className="form-row-2">
                   <div className="form-group">
-                    <label>Unit Valuation / Cost (₹)</label>
+                    <label style={{ fontWeight: '700', color: formData.package_type === 'Loose' ? '#0f172a' : '#0284c7' }}>
+                      {formData.package_type === 'Loose' 
+                        ? `Per Piece Price (₹ / ${formData.unit || selectedProduct?.unit || 'Piece'})` 
+                        : `Per ${formData.package_type} Price (₹ / ${formData.package_type})`} *
+                    </label>
                     <input
                       type="number"
                       step="0.01"

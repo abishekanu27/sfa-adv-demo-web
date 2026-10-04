@@ -53,6 +53,7 @@ export const ProductList = ({
   // Price groups state for product mapping
   const [priceGroups, setPriceGroups] = useState([]);
   const [groupPrices, setGroupPrices] = useState({});
+  const [groupBoxPrices, setGroupBoxPrices] = useState({});
   const [loadingGroupPrices, setLoadingGroupPrices] = useState(false);
 
   // Form state - purely driven by user input and SQL
@@ -62,7 +63,10 @@ export const ProductList = ({
     category_id: '',
     category_name: '',
     unit: 'Pcs',
+    package_type: 'Box',
+    items_per_package: '1',
     selling_price: '',
+    box_price: '',
     cost_price: '',
     gst_rate: '18% (Standard - CGST 9% + SGST 9%)',
     hsn_code: ''
@@ -132,12 +136,16 @@ export const ProductList = ({
       category_id: categories[0]?.category_id || categories[0]?.id || '',
       category_name: categories[0]?.name || '',
       unit: 'Pcs',
+      package_type: 'Box',
+      items_per_package: '1',
       selling_price: '',
+      box_price: '',
       cost_price: '',
       gst_rate: '18% (Standard - CGST 9% + SGST 9%)',
       hsn_code: ''
     });
     setGroupPrices({});
+    setGroupBoxPrices({});
     setShowProductModal(true);
     setLoadingGroupPrices(true);
     try {
@@ -160,12 +168,16 @@ export const ProductList = ({
       category_id: prod.category_id || '',
       category_name: prod.category_name || '',
       unit: prod.unit || 'Pcs',
+      package_type: prod.package_type || 'Box',
+      items_per_package: String(prod.items_per_package || 1),
       selling_price: prod.selling_price || '',
+      box_price: prod.box_price !== undefined ? String(prod.box_price) : '',
       cost_price: prod.cost_price || '',
       gst_rate: prod.gst_rate || '18% (Standard - CGST 9% + SGST 9%)',
       hsn_code: prod.hsn_code || ''
     });
     setGroupPrices({});
+    setGroupBoxPrices({});
     setShowProductModal(true);
     setLoadingGroupPrices(true);
 
@@ -176,12 +188,15 @@ export const ProductList = ({
       ]);
       setPriceGroups(groups);
       const ratesMap = {};
+      const boxRatesMap = {};
       if (Array.isArray(existingRates)) {
         existingRates.forEach(r => {
           ratesMap[r.price_group_id || r.id] = r.selling_price;
+          boxRatesMap[r.price_group_id || r.id] = r.box_price || '';
         });
       }
       setGroupPrices(ratesMap);
+      setGroupBoxPrices(boxRatesMap);
     } catch (err) {
       console.error('Error fetching group prices for edit:', err);
     } finally {
@@ -211,7 +226,8 @@ export const ProductList = ({
       if (priceGroups.length > 0 && targetProductId) {
         const pricesPayload = priceGroups.map(g => ({
           price_group_id: g.price_group_id || g.id,
-          selling_price: groupPrices[g.price_group_id || g.id] !== undefined ? groupPrices[g.price_group_id || g.id] : ''
+          selling_price: groupPrices[g.price_group_id || g.id] !== undefined ? groupPrices[g.price_group_id || g.id] : '',
+          box_price: groupBoxPrices[g.price_group_id || g.id] !== undefined ? groupBoxPrices[g.price_group_id || g.id] : ''
         }));
         await updateProductGroupPricesByProductApi(targetProductId, pricesPayload);
       }
@@ -476,7 +492,8 @@ export const ProductList = ({
                 <th style={{ width: '90px' }}>SKU</th>
                 <th>Category</th>
                 <th style={{ width: '105px' }}>Cost Price (₹)</th>
-                <th style={{ width: '110px' }}>Selling Price (₹)</th>
+                <th style={{ width: '115px' }}>Piece Price (₹)</th>
+                <th style={{ width: '135px' }}>Box / Bag Price (₹)</th>
                 <th style={{ width: '125px' }}>GST Rate</th>
                 <th style={{ width: '140px' }}>Total Inward Batches</th>
                 <th style={{ width: '100px' }}>Gross Margin</th>
@@ -489,7 +506,7 @@ export const ProductList = ({
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="13" style={{ padding: '60px 24px', textAlign: 'center' }}>
+                  <td colSpan="14" style={{ padding: '60px 24px', textAlign: 'center' }}>
                     <PageLoader 
                       message="Loading product & stock catalog..." 
                       subtext="Fetching SKU records, live inventory, inward batches, and cost valuations" 
@@ -498,7 +515,7 @@ export const ProductList = ({
                 </tr>
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan="13" className="empty-products-cell">
+                  <td colSpan="14" className="empty-products-cell">
                     <div className="empty-state-wrap">
                       <span className="empty-message-text">No product found matching your search or category filter.</span>
                     </div>
@@ -542,7 +559,14 @@ export const ProductList = ({
                         </span>
                       </td>
                       <td>₹{costPrice.toLocaleString('en-IN')}</td>
-                      <td className="price-bold">₹{sellingPrice.toLocaleString('en-IN')}</td>
+                      <td className="price-bold">
+                        ₹{sellingPrice.toLocaleString('en-IN')}
+                        <small className="cell-subtext">/{prod.unit || 'Pc'}</small>
+                      </td>
+                      <td className="price-bold" style={{ color: '#0284c7' }}>
+                        ₹{parseFloat(prod.box_price || (sellingPrice * (prod.items_per_package || 1))).toLocaleString('en-IN')}
+                        <small className="cell-subtext">/{prod.package_type || 'Box'} ({prod.items_per_package || 1} {prod.unit || 'Pcs'})</small>
+                      </td>
                       <td>{prod.gst_rate || '18%'}</td>
                       <td>
                         <span className="batches-count-pill">
@@ -652,7 +676,7 @@ export const ProductList = ({
                   />
                 </div>
 
-                {/* SKU Code & Measurement Unit */}
+                {/* SKU Code & Cost Price */}
                 <div className="form-row-2">
                   <div className="form-group">
                     <label>SKU Code</label>
@@ -665,24 +689,15 @@ export const ProductList = ({
                   </div>
 
                   <div className="form-group">
-                    <label>Measurement Unit (KG, gram, litre, etc.) *</label>
-                    <select
-                      value={productForm.unit || 'Pcs'}
-                      onChange={(e) => setProductForm({ ...productForm, unit: e.target.value })}
-                    >
-                      <option value="KG">KG (Kilogram)</option>
-                      <option value="Gram">Gram (g)</option>
-                      <option value="Litre">Litre (L)</option>
-                      <option value="ML">ML (Millilitre)</option>
-                      <option value="Pcs">Pcs (Pieces)</option>
-                      <option value="Box">Box</option>
-                      <option value="Bag">Bag</option>
-                      <option value="Carton">Carton</option>
-                      <option value="Tin">Tin</option>
-                      <option value="Pkt">Pkt (Packet)</option>
-                      <option value="Dozen">Dozen</option>
-                      <option value="Meter">Meter</option>
-                    </select>
+                    <label>Cost Price (COGS ₹)</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      step="any"
+                      placeholder="e.g. 40"
+                      value={productForm.cost_price}
+                      onChange={(e) => setProductForm({ ...productForm, cost_price: e.target.value })}
+                    />
                   </div>
                 </div>
 
@@ -731,31 +746,130 @@ export const ProductList = ({
                   )}
                 </div>
 
-                {/* Base Selling Price & Cost Price */}
-                <div className="form-row-2">
-                  <div className="form-group">
-                    <label>Base Selling Price (M.R.P ₹) *</label>
-                    <input 
-                      type="number" 
-                      required
-                      min="0"
-                      step="any"
-                      placeholder="e.g. 1000"
-                      value={productForm.selling_price}
-                      onChange={(e) => setProductForm({ ...productForm, selling_price: e.target.value })}
-                    />
+                {/* Packaging & Pricing Configuration Card: Measurement Unit, Piece Price, Packaging Type, Units per Box, and Box Selling Price */}
+                <div style={{
+                  background: '#f8fafc',
+                  padding: '16px 16px 14px 16px',
+                  borderRadius: '14px',
+                  border: '1.5px solid #e2e8f0',
+                  marginBottom: '16px'
+                }}>
+                  {/* Row 1: Measurement Unit & Piece Selling Price */}
+                  <div className="form-row-2" style={{ marginBottom: '14px' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label style={{ fontWeight: '700', color: '#0f172a' }}>
+                        Measurement Unit (KG, gram, litre, etc.) *
+                      </label>
+                      <select
+                        value={productForm.unit || 'Pcs'}
+                        onChange={(e) => setProductForm({ ...productForm, unit: e.target.value })}
+                        style={{ background: '#ffffff' }}
+                      >
+                        <option value="KG">KG (Kilogram)</option>
+                        <option value="Gram">Gram (g)</option>
+                        <option value="Litre">Litre (L)</option>
+                        <option value="ML">ML (Millilitre)</option>
+                        <option value="Pcs">Pcs (Pieces)</option>
+                        <option value="Box">Box</option>
+                        <option value="Bag">Bag</option>
+                        <option value="Carton">Carton</option>
+                        <option value="Tin">Tin</option>
+                        <option value="Pkt">Pkt (Packet)</option>
+                        <option value="Dozen">Dozen</option>
+                        <option value="Meter">Meter</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label style={{ fontWeight: '700', color: '#0f172a' }}>
+                        Piece Selling Price (₹ / {productForm.unit || 'Pcs'}) *
+                      </label>
+                      <input 
+                        type="number" 
+                        required
+                        min="0"
+                        step="any"
+                        placeholder="e.g. 50"
+                        value={productForm.selling_price}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const items = parseInt(productForm.items_per_package, 10) || 1;
+                          const oldCalculated = String((parseFloat(productForm.selling_price) || 0) * items);
+                          const shouldAutoUpdateBox = !productForm.box_price || productForm.box_price === oldCalculated;
+                          setProductForm({ 
+                            ...productForm, 
+                            selling_price: val,
+                            box_price: shouldAutoUpdateBox && val ? String((parseFloat(val) || 0) * items) : productForm.box_price
+                          });
+                        }}
+                        style={{ background: '#ffffff', fontWeight: '700' }}
+                      />
+                    </div>
                   </div>
 
-                  <div className="form-group">
-                    <label>Cost Price (COGS ₹)</label>
-                    <input 
-                      type="number" 
-                      min="0"
-                      step="any"
-                      placeholder="e.g. 650"
-                      value={productForm.cost_price}
-                      onChange={(e) => setProductForm({ ...productForm, cost_price: e.target.value })}
-                    />
+                  {/* Row 2: Packaging Type, Units per Box, and Box Selling Price */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.3fr', gap: '14px', alignItems: 'flex-start' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label style={{ color: '#0f172a', fontWeight: '700' }}>Packaging Type *</label>
+                      <select
+                        value={productForm.package_type || 'Box'}
+                        onChange={(e) => setProductForm({ ...productForm, package_type: e.target.value })}
+                        style={{ background: '#ffffff' }}
+                      >
+                        <option value="Box">Box</option>
+                        <option value="Bag">Bag</option>
+                        <option value="Carton">Carton</option>
+                        <option value="Tin">Tin</option>
+                        <option value="Packet">Packet</option>
+                        <option value="Dozen">Dozen</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label style={{ color: '#0f172a', fontWeight: '700' }}>
+                        Units per {productForm.package_type || 'Box'} *
+                      </label>
+                      <input 
+                        type="number"
+                        min="1"
+                        step="1"
+                        required
+                        placeholder="e.g. 10"
+                        value={productForm.items_per_package}
+                        onChange={(e) => {
+                          const itemsVal = e.target.value;
+                          const items = parseInt(itemsVal, 10) || 1;
+                          const pieceRate = parseFloat(productForm.selling_price) || 0;
+                          const oldCalculated = String(pieceRate * (parseInt(productForm.items_per_package, 10) || 1));
+                          const shouldAutoUpdateBox = !productForm.box_price || productForm.box_price === oldCalculated;
+                          setProductForm({ 
+                            ...productForm, 
+                            items_per_package: itemsVal,
+                            box_price: shouldAutoUpdateBox && pieceRate > 0 ? String(pieceRate * items) : productForm.box_price
+                          });
+                        }}
+                        style={{ background: '#ffffff' }}
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label style={{ color: '#0284c7', fontWeight: '800' }}>
+                        {productForm.package_type || 'Box'} Selling Price (₹) *
+                      </label>
+                      <input 
+                        type="number"
+                        min="0"
+                        step="any"
+                        required
+                        placeholder={productForm.selling_price ? `e.g. ${(parseFloat(productForm.selling_price) || 0) * (parseInt(productForm.items_per_package, 10) || 1)}` : '0.00'}
+                        value={productForm.box_price}
+                        onChange={(e) => setProductForm({ ...productForm, box_price: e.target.value })}
+                        style={{ background: '#ffffff', borderColor: '#0284c7', fontWeight: '700' }}
+                      />
+                      <small style={{ color: '#64748b', fontSize: '11px', marginTop: '3px', display: 'block' }}>
+                        Price for 1 full {productForm.package_type || 'Box'} ({productForm.items_per_package || 1} {productForm.unit || 'Pcs'})
+                      </small>
+                    </div>
                   </div>
                 </div>
 
@@ -833,25 +947,49 @@ export const ProductList = ({
                             </div>
 
                             <div className="group-card-body">
-                              <div className="group-input-wrapper">
-                                <label className="group-input-label">Customer Selling Rate</label>
-                                <div className="group-currency-input">
-                                  <span className="currency-prefix">₹</span>
-                                  <input 
-                                    type="number"
-                                    min="0"
-                                    step="any"
-                                    placeholder={productForm.selling_price ? `Base (₹${productForm.selling_price})` : '0.00'}
-                                    value={currentPrice}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      setGroupPrices(prev => ({
-                                        ...prev,
-                                        [gid]: val
-                                      }));
-                                    }}
-                                    className="group-rate-input"
-                                  />
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                <div className="group-input-wrapper">
+                                  <label className="group-input-label">Piece Selling Rate (₹)</label>
+                                  <div className="group-currency-input">
+                                    <span className="currency-prefix">₹</span>
+                                    <input 
+                                      type="number"
+                                      min="0"
+                                      step="any"
+                                      placeholder={productForm.selling_price ? `Base (₹${productForm.selling_price})` : '0.00'}
+                                      value={currentPrice}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setGroupPrices(prev => ({
+                                          ...prev,
+                                          [gid]: val
+                                        }));
+                                      }}
+                                      className="group-rate-input"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="group-input-wrapper">
+                                  <label className="group-input-label">{productForm.package_type || 'Box'} Rate (₹)</label>
+                                  <div className="group-currency-input">
+                                    <span className="currency-prefix">₹</span>
+                                    <input 
+                                      type="number"
+                                      min="0"
+                                      step="any"
+                                      placeholder={productForm.box_price ? `Base (₹${productForm.box_price})` : '0.00'}
+                                      value={groupBoxPrices[gid] !== undefined ? groupBoxPrices[gid] : ''}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setGroupBoxPrices(prev => ({
+                                          ...prev,
+                                          [gid]: val
+                                        }));
+                                      }}
+                                      className="group-rate-input"
+                                    />
+                                  </div>
                                 </div>
                               </div>
 

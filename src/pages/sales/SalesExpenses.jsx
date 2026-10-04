@@ -103,7 +103,7 @@ export const SalesExpenses = ({ user, companySettings }) => {
         setSummary(expRes.summary);
       }
 
-      const allUsers = usersRes?.users || [];
+      const allUsers = Array.isArray(usersRes) ? usersRes : (usersRes?.users || []);
       const smList = allUsers.filter(u => 
         ['SALES_EXECUTIVE', 'SALESMAN', 'SLMN'].includes(u.role) ||
         ['SALES_EXECUTIVE', 'SALESMAN', 'SLMN'].includes(u.role_code)

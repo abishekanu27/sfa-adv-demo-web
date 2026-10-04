@@ -20,7 +20,8 @@ import {
   Download,
   UploadCloud,
   FileSpreadsheet,
-  Receipt
+  Receipt,
+  Navigation
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import {
@@ -91,8 +92,31 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
     credit_days: '30',
     outstanding_balance: '',
     price_group_id: '',
+    latitude: '',
+    longitude: '',
     status: 'Active'
   });
+
+  const handleDetectBrowserLocation = () => {
+    if (!navigator.geolocation) {
+      showNotification('Browser geolocation is not supported on this browser', 'error');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setFormData(prev => ({
+          ...prev,
+          latitude: pos.coords.latitude.toFixed(7),
+          longitude: pos.coords.longitude.toFixed(7)
+        }));
+        showNotification(`GPS captured: ${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`);
+      },
+      (err) => {
+        showNotification(`Could not acquire GPS: ${err.message}`, 'error');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   const composePlace = (area, dist) => {
     return [area, dist, 'Kerala'].filter(Boolean).join(', ');
@@ -204,6 +228,8 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
       credit_days: '30',
       outstanding_balance: '',
       price_group_id: priceGroups[0]?.price_group_id || '',
+      latitude: '',
+      longitude: '',
       status: 'Active'
     });
     setIsCustomArea(false);
@@ -245,6 +271,8 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
       credit_days: c.credit_days || '30',
       outstanding_balance: c.outstanding_balance || '',
       price_group_id: c.price_group_id || '',
+      latitude: c.latitude != null ? String(c.latitude) : '',
+      longitude: c.longitude != null ? String(c.longitude) : '',
       status: c.status || 'Active'
     });
     setIsCustomArea(isCustom);
@@ -863,6 +891,52 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
                             <small className="route-sub">{c.route_area}</small>
                           )}
                           {!c.local_area && !c.place && !c.route_area && <span className="text-muted">—</span>}
+
+                          {/* Customer GPS Location Tag */}
+                          {c.latitude && c.longitude ? (
+                            <a
+                              href={`https://www.google.com/maps?q=${c.latitude},${c.longitude}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={`GPS: ${c.latitude}, ${c.longitude} (Click to open in Google Maps)`}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                marginTop: '4px',
+                                padding: '2px 6px',
+                                background: '#ecfdf5',
+                                color: '#047857',
+                                border: '1px solid #a7f3d0',
+                                borderRadius: '4px',
+                                fontSize: '0.72rem',
+                                fontWeight: 600,
+                                textDecoration: 'none',
+                                width: 'fit-content'
+                              }}
+                            >
+                              <Navigation size={10} />
+                              <span>{parseFloat(c.latitude).toFixed(4)}, {parseFloat(c.longitude).toFixed(4)}</span>
+                            </a>
+                          ) : (
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                                marginTop: '4px',
+                                padding: '1px 5px',
+                                background: '#f1f5f9',
+                                color: '#94a3b8',
+                                borderRadius: '4px',
+                                fontSize: '0.68rem',
+                                fontWeight: 500,
+                                width: 'fit-content'
+                              }}
+                            >
+                              No GPS
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="gst-cell">
@@ -1199,6 +1273,81 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
                         placeholder="e.g. Building 12, Market Canal Road, Near Metro"
                         value={formData.address}
                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* GPS Telemetry Coordinates */}
+                  <div className="form-row-2" style={{ marginTop: '12px', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <label style={{ margin: 0, fontWeight: 600, fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <Navigation size={13} style={{ color: '#2563eb' }} />
+                          <span>GPS Latitude</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleDetectBrowserLocation}
+                          style={{
+                            background: '#eff6ff',
+                            color: '#1d4ed8',
+                            border: '1px solid #bfdbfe',
+                            borderRadius: '4px',
+                            padding: '2px 8px',
+                            fontSize: '0.72rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <MapPin size={11} />
+                          <span>Detect My GPS</span>
+                        </button>
+                      </div>
+                      <input 
+                        type="number"
+                        step="0.0000001"
+                        placeholder="e.g. 10.0276123"
+                        value={formData.latitude}
+                        onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
+                        style={{ background: '#fff' }}
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <label style={{ margin: 0, fontWeight: 600, fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <Navigation size={13} style={{ color: '#2563eb' }} />
+                          <span>GPS Longitude</span>
+                        </label>
+                        {(formData.latitude || formData.longitude) && (
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, latitude: '', longitude: '' })}
+                            style={{
+                              background: '#fef2f2',
+                              color: '#dc2626',
+                              border: '1px solid #fecaca',
+                              borderRadius: '4px',
+                              padding: '2px 8px',
+                              fontSize: '0.72rem',
+                              fontWeight: 600,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Clear GPS
+                          </button>
+                        )}
+                      </div>
+                      <input 
+                        type="number"
+                        step="0.0000001"
+                        placeholder="e.g. 76.3016456"
+                        value={formData.longitude}
+                        onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
+                        style={{ background: '#fff' }}
                       />
                     </div>
                   </div>

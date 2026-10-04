@@ -699,6 +699,7 @@ export const InvoiceTemplateSheet = ({
             {company.address_line1 && <p className="thermal-sub">{company.address_line1}{company.city ? `, ${company.city}` : ''}</p>}
             {company.gstin?.trim() ? <p className="thermal-sub">GSTIN: {company.gstin.trim()}</p> : null}
             {company.phone?.trim() ? <p className="thermal-sub">Tel: {company.phone.trim()}</p> : null}
+            {settings.mobile_receipt_header ? <p className="thermal-sub" style={{ fontWeight: '700', color: '#1e3a8a', marginTop: '2px' }}>{settings.mobile_receipt_header}</p> : null}
             <div style={{ marginTop: '4px' }}>
               <span style={{ 
                 display: 'inline-block', 
@@ -848,8 +849,8 @@ export const InvoiceTemplateSheet = ({
           )}
 
           <div className="thermal-footer">
-            <p>THANK YOU FOR YOUR BUSINESS!</p>
-            <p>*** POWERED BY SALESFORCE ERP ***</p>
+            <p>{settings.mobile_receipt_footer || 'THANK YOU FOR YOUR BUSINESS!'}</p>
+            <p>{settings.mobile_receipt_tagline ? `*** ${settings.mobile_receipt_tagline.toUpperCase()} ***` : '*** POWERED BY SOFTAIR SFA ***'}</p>
           </div>
           <div className="thermal-cut-guide">- - - - - - - - - - - [ CUT HERE ] - - - - - - - - - - -</div>
         </div>

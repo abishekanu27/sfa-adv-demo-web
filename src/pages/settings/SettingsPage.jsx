@@ -83,6 +83,9 @@ export const SettingsPage = ({ initialTab = 'company', onSettingsUpdate }) => {
     thermal_width: '80mm', // '80mm' | '58mm'
     dot_matrix_columns: '80', // '80' | '132'
     signature_label: 'Authorized Signatory',
+    mobile_receipt_header: '',
+    mobile_receipt_footer: 'Thank you for your business!',
+    mobile_receipt_tagline: 'Powered by SoftAir SFA',
     terms_and_conditions: '1. Goods once sold will not be taken back or exchanged.\n2. Interest @ 18% p.a. will be charged if payment is delayed beyond 15 days.\n3. Subject to Bengaluru jurisdiction only.',
     credit_note_terms: '1. Amount credited to customer ledger balance.\n2. Subject to product quality verification.\n3. Subject to local jurisdiction.',
     purchase_order_terms: '1. Mention this PO Number on all Delivery Challans and Invoices.\n2. Materials subject to physical inspection & batch testing at inward gate.\n3. Payment will be released within 30 days of GRN generation.'
@@ -1060,6 +1063,71 @@ export const SettingsPage = ({ initialTab = 'company', onSettingsUpdate }) => {
                 )}
                 <div className="terms-help-row">
                   <small>💡 Note: Each new line entered here appears formatted as a clear condition in the printed document preview.</small>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Thermal Receipt Header & Footer Customizer Card */}
+            <div className="template-terms-editor-card" style={{ marginTop: '16px' }}>
+              <div className="terms-editor-header">
+                <div className="terms-header-left">
+                  <Smartphone size={16} color="#059669" />
+                  <h4>Mobile Thermal Receipt Header &amp; Footer Designer</h4>
+                </div>
+                <span style={{ fontSize: '11px', background: '#ecfdf5', color: '#047857', padding: '3px 8px', borderRadius: '4px', fontWeight: '600' }}>
+                  Auto Syncs to Mobile Devices
+                </span>
+              </div>
+
+              <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label className="terms-field-label" style={{ marginBottom: '4px', display: 'block' }}>
+                    <span style={{ fontWeight: '600', fontSize: '12px' }}>Mobile Receipt Sub-Header / Note (Printed under Company Header):</span>
+                  </label>
+                  <input
+                    type="text"
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+                    placeholder="e.g. SFA VAN SALE • PALAKKAD DEPOT or Order Booking Note"
+                    value={invoiceSettings.mobile_receipt_header || ''}
+                    onChange={(e) => setInvoiceSettings(prev => ({ ...prev, mobile_receipt_header: e.target.value }))}
+                  />
+                  <small style={{ color: '#64748b', fontSize: '11px', marginTop: '2px', display: 'block' }}>
+                    Optional notice or branch tagline printed directly below company address and contact lines.
+                  </small>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
+                  <div>
+                    <label className="terms-field-label" style={{ marginBottom: '4px', display: 'block' }}>
+                      <span style={{ fontWeight: '600', fontSize: '12px' }}>Mobile Receipt Footer Note:</span>
+                    </label>
+                    <input
+                      type="text"
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+                      placeholder="Thank you for your business!"
+                      value={invoiceSettings.mobile_receipt_footer !== undefined ? invoiceSettings.mobile_receipt_footer : 'Thank you for your business!'}
+                      onChange={(e) => setInvoiceSettings(prev => ({ ...prev, mobile_receipt_footer: e.target.value }))}
+                    />
+                    <small style={{ color: '#64748b', fontSize: '11px', marginTop: '2px', display: 'block' }}>
+                      Primary greeting printed at the bottom of the receipt.
+                    </small>
+                  </div>
+
+                  <div>
+                    <label className="terms-field-label" style={{ marginBottom: '4px', display: 'block' }}>
+                      <span style={{ fontWeight: '600', fontSize: '12px' }}>Sub-Footer / Powered By Tagline:</span>
+                    </label>
+                    <input
+                      type="text"
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+                      placeholder="Powered by SoftAir SFA"
+                      value={invoiceSettings.mobile_receipt_tagline !== undefined ? invoiceSettings.mobile_receipt_tagline : 'Powered by SoftAir SFA'}
+                      onChange={(e) => setInvoiceSettings(prev => ({ ...prev, mobile_receipt_tagline: e.target.value }))}
+                    />
+                    <small style={{ color: '#64748b', fontSize: '11px', marginTop: '2px', display: 'block' }}>
+                      System branding tagline printed at the bottom.
+                    </small>
+                  </div>
                 </div>
               </div>
             </div>

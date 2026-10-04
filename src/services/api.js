@@ -1039,7 +1039,9 @@ export const fetchSalesmanLiveTrackingApi = async () => {
   const res = await fetch(`${API_BASE}/sales/live-tracking`);
   if (!res.ok) throw new Error('Failed to fetch live tracking');
   const json = await res.json();
-  return json.tracking || [];
+  const trackingList = json.tracking || [];
+  trackingList._customers = json.customers || [];
+  return trackingList;
 };
 
 // ==========================================

@@ -8,6 +8,7 @@ import {
   X
 } from 'lucide-react';
 import { loginApi, fetchCompanySettings } from '../services/api';
+import { DISPLAY_VERSION } from '../version';
 import './LoginPage.css';
 
 export const LoginPage = ({ onLoginSuccess, idleMessage }) => {
@@ -242,6 +243,13 @@ export const LoginPage = ({ onLoginSuccess, idleMessage }) => {
                       'LOGIN'
                     )}
                   </button>
+
+                  {/* Version Tag Below Login Button */}
+                  <div className="reerui-version-wrapper">
+                    <span className="reerui-version-badge" title={`Software Version ${DISPLAY_VERSION}`}>
+                      {DISPLAY_VERSION}
+                    </span>
+                  </div>
 
                   {/* Copyright & Support Info */}
                   <div className="reerui-login-footer">
