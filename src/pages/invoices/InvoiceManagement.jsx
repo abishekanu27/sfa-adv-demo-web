@@ -456,14 +456,14 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
           onClick={() => setInvoiceTypeTab('GST')}
         >
           <Building2 size={14} />
-          <span>GST Tax Invoices</span>
+          <span>GST Invoices</span>
         </button>
         <button
           className={`category-tab ${invoiceTypeTab === 'NON_GST' ? 'active' : ''}`}
           onClick={() => setInvoiceTypeTab('NON_GST')}
         >
           <CreditCard size={14} />
-          <span>Non-GST Retail Bills</span>
+          <span>Non-GST Estimates</span>
         </button>
       </div>
 
@@ -612,7 +612,7 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
                     <div className="table-actions-cell">
                       <button
                         className="print-invoice-btn"
-                        title={inv.invoice_type === 'NON_GST' ? 'View & Print Bill of Supply' : 'View & Print Tax Invoice'}
+                        title={inv.invoice_type === 'NON_GST' ? 'View & Print Estimate' : 'View & Print Invoice'}
                         onClick={() => setViewingInvoice(inv)}
                       >
                         <Printer size={13} />
@@ -648,7 +648,7 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
         <div className="modal-overlay">
           <div className="modal-content-card">
             <div className="modal-header">
-              <h2>{formData.invoice_type === 'NON_GST' ? 'Create Non-GST Retail Bill / Cash Memo' : 'Create New GST Tax Invoice'}</h2>
+              <h2>{formData.invoice_type === 'NON_GST' ? 'Create Non-GST Estimate' : 'Create New GST Invoice'}</h2>
               <button className="modal-close-btn" onClick={() => setShowCreateModal(false)}>
                 <X size={18} />
               </button>
@@ -684,7 +684,7 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
                           {formData.invoice_type === 'GST' && <div className="radio-circle-inner" />}
                         </div>
                         <div>
-                          <strong>Option 1: GST Tax Invoice</strong>
+                          <strong>Option 1: GST Invoice</strong>
                           <span className="type-badge-pill gst">Standard B2B / B2C</span>
                         </div>
                       </div>
@@ -712,11 +712,11 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
                           {formData.invoice_type === 'NON_GST' && <div className="radio-circle-inner" />}
                         </div>
                         <div>
-                          <strong>Option 2: Non-GST Invoice / Retail Bill</strong>
+                          <strong>Option 2: Non-GST Estimate</strong>
                           <span className="type-badge-pill non-gst">0% Tax Exempt</span>
                         </div>
                       </div>
-                      <p className="radio-desc">Bill of Supply / Cash memo for retail consumers, exempt items, or counter cash sales (0% tax).</p>
+                      <p className="radio-desc">Estimate for retail consumers, exempt items, or counter cash sales (0% tax).</p>
                     </div>
                   </div>
                 </div>
@@ -1089,7 +1089,7 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
                   type="submit"
                   className="inv-btn inv-btn-primary"
                 >
-                  {formData.invoice_type === 'NON_GST' ? 'Generate Non-GST Bill' : 'Generate Tax Invoice'}
+                  {formData.invoice_type === 'NON_GST' ? 'Generate Estimate' : 'Generate Invoice'}
                 </button>
               </div>
             </form>
@@ -1105,8 +1105,8 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
               <div>
                 <h2 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>
                   {viewingInvoice.invoice_type === 'NON_GST'
-                    ? `Commercial Bill Preview - ${viewingInvoice.invoice_number}`
-                    : `GST Tax Invoice Preview - ${viewingInvoice.invoice_number}`}
+                    ? `Estimate Preview - ${viewingInvoice.invoice_number}`
+                    : `GST Invoice Preview - ${viewingInvoice.invoice_number}`}
                 </h2>
                 <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
                   Customer: <strong>{viewingInvoice.customer_name}</strong> {viewingInvoice.customer_gstin ? `(GSTIN: ${viewingInvoice.customer_gstin})` : '(Non-GST)'}

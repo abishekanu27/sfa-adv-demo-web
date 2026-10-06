@@ -135,6 +135,11 @@ export const InvoiceTemplateSheet = ({
   // Determine initial template based on invoice type
   const isInvoiceGst = activeInvoice.invoice_type === 'GST' || 
     Boolean(activeInvoice.customer_gstin && !['URP', 'NON-GST', 'NIL', 'NONE'].includes(String(activeInvoice.customer_gstin).trim().toUpperCase())) ||
+    Boolean(activeInvoice.has_gst) ||
+    Boolean(activeInvoice.total_gst && Number(activeInvoice.total_gst) > 0) ||
+    Boolean(activeInvoice.total_cgst && Number(activeInvoice.total_cgst) > 0) ||
+    Boolean(activeInvoice.cgst && Number(activeInvoice.cgst) > 0) ||
+    Boolean(activeInvoice.tax_amount && Number(activeInvoice.tax_amount) > 0) ||
     Boolean((controlledTemplate === 'purchase_order' || activeInvoice.po_number) && activeInvoice.vendor_gstin && !['URP', 'NON-GST', 'NIL', 'NONE'].includes(String(activeInvoice.vendor_gstin).trim().toUpperCase()));
 
   const defaultTemplate = controlledTemplate || (isInvoiceGst ? 'gst' : 'normal');
@@ -186,6 +191,11 @@ export const InvoiceTemplateSheet = ({
     credit_note_terms: invoiceSettings.credit_note_terms || companySettings.credit_note_terms,
     purchase_order_terms: invoiceSettings.purchase_order_terms || companySettings.purchase_order_terms
   };
+
+  // Invoice title: "INVOICE" for GST invoices, "ESTIMATE" for Non-GST invoices
+  const stampTitle = isInvoiceGst
+    ? (settings.invoice_title && !['CASH MEMO', 'RETAIL CASH MEMO', 'BILL OF SUPPLY / CASH MEMO', 'RETAIL CASH MEMO / BILL OF SUPPLY', 'ESTIMATE'].includes(String(settings.invoice_title).trim().toUpperCase()) ? settings.invoice_title : 'INVOICE')
+    : 'ESTIMATE';
 
   // Normalize Customer details
   const customer = {
@@ -371,7 +381,7 @@ export const InvoiceTemplateSheet = ({
 
             <div className="gst-invoice-meta">
               <div className="invoice-title-stamp">
-                {settings.invoice_title || 'GST TAX INVOICE'}
+                {stampTitle}
               </div>
               <table className="meta-compact-table">
                 <tbody>
@@ -597,7 +607,7 @@ export const InvoiceTemplateSheet = ({
               <p className="company-print-contacts">Phone: {company.phone} | Email: {company.email}</p>
             </div>
             <div className="normal-meta-box">
-              <h3 className="norm-inv-badge">{settings.invoice_title || 'BILL OF SUPPLY / CASH MEMO'}</h3>
+              <h3 className="norm-inv-badge">{stampTitle}</h3>
               <p>Bill #: <strong>{invoiceNo}</strong></p>
               <p>Date: <strong>{invoiceDate}</strong></p>
               <p>Executive: {salesmanName}</p>
@@ -712,7 +722,7 @@ export const InvoiceTemplateSheet = ({
                 borderRadius: '3px',
                 textTransform: 'uppercase'
               }}>
-                {isInvoiceGst ? 'GST TAX INVOICE' : (settings.invoice_title || 'RETAIL CASH MEMO / BILL OF SUPPLY')}
+                {stampTitle}
               </span>
             </div>
           </div>

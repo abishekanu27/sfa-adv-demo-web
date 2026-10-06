@@ -217,16 +217,21 @@ export const DashboardPreview = ({ user, onLogout, isEmbedded = false }) => {
   const activeTrajectoryData = React.useMemo(() => {
     if (trajectoryTimeframe === 'week') {
       if (dashboardData.trajectories?.week && dashboardData.trajectories.week.length > 0) {
-        return dashboardData.trajectories.week;
+        const weekData = [...dashboardData.trajectories.week];
+        const sunIndex = weekData.findIndex(d => (d.label || '').toLowerCase().startsWith('sun'));
+        if (sunIndex > 0) {
+          return [...weekData.slice(sunIndex), ...weekData.slice(0, sunIndex)];
+        }
+        return weekData;
       }
       return [
+        { label: 'Sun', fullLabel: 'Sunday', revenue: 0, orders: 0 },
         { label: 'Mon', fullLabel: 'Monday', revenue: Math.round(dashboardData.metrics.total_sales_revenue * 0.12), orders: 1 },
         { label: 'Tue', fullLabel: 'Tuesday', revenue: Math.round(dashboardData.metrics.total_sales_revenue * 0.18), orders: 1 },
         { label: 'Wed', fullLabel: 'Wednesday', revenue: Math.round(dashboardData.metrics.total_sales_revenue * 0.15), orders: 1 },
         { label: 'Thu', fullLabel: 'Thursday', revenue: Math.round(dashboardData.metrics.total_sales_revenue * 0.22), orders: 2 },
         { label: 'Fri', fullLabel: 'Friday (Today)', revenue: dashboardData.metrics.total_sales_revenue, orders: dashboardData.metrics.total_orders_count || 2 },
-        { label: 'Sat', fullLabel: 'Saturday', revenue: 0, orders: 0 },
-        { label: 'Sun', fullLabel: 'Sunday', revenue: 0, orders: 0 }
+        { label: 'Sat', fullLabel: 'Saturday', revenue: 0, orders: 0 }
       ];
     }
     if (trajectoryTimeframe === 'quarter') {

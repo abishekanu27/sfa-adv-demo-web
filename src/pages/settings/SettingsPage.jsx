@@ -71,7 +71,7 @@ export const SettingsPage = ({ initialTab = 'company', onSettingsUpdate }) => {
   // Invoice Templates Configuration State
   const [invoiceSettings, setInvoiceSettings] = useState({
     active_template: 'gst', // 'gst' | 'normal' | 'mobile' | 'thermal' | 'credit_note' | 'purchase_order' | 'dotmatrix'
-    invoice_title: 'TAX INVOICE',
+    invoice_title: 'INVOICE',
     invoice_prefix: 'INV-2026-',
     show_logo: true,
     show_hsn: true,
@@ -787,7 +787,7 @@ export const SettingsPage = ({ initialTab = 'company', onSettingsUpdate }) => {
                   type="button"
                   className={`format-pill-btn ${invoiceSettings.active_template === 'gst' ? 'pill-active' : ''}`}
                   onClick={() => {
-                    setInvoiceSettings({ ...invoiceSettings, active_template: 'gst', invoice_title: 'TAX INVOICE' });
+                    setInvoiceSettings({ ...invoiceSettings, active_template: 'gst', invoice_title: 'INVOICE' });
                     setTermsSubTab('invoice');
                   }}
                 >
@@ -799,19 +799,19 @@ export const SettingsPage = ({ initialTab = 'company', onSettingsUpdate }) => {
                   type="button"
                   className={`format-pill-btn ${invoiceSettings.active_template === 'normal' ? 'pill-active' : ''}`}
                   onClick={() => {
-                    setInvoiceSettings({ ...invoiceSettings, active_template: 'normal', invoice_title: 'BILL OF SUPPLY / INVOICE' });
+                    setInvoiceSettings({ ...invoiceSettings, active_template: 'normal', invoice_title: 'ESTIMATE' });
                     setTermsSubTab('invoice');
                   }}
                 >
                   <FileText size={15} />
-                  <span>Normal Invoice (Non-GST)</span>
+                  <span>Normal Invoice (Non-GST Estimate)</span>
                 </button>
 
                 <button
                   type="button"
                   className={`format-pill-btn ${invoiceSettings.active_template === 'mobile' ? 'pill-active' : ''}`}
                   onClick={() => {
-                    setInvoiceSettings({ ...invoiceSettings, active_template: 'mobile', invoice_title: 'MOBILE SPOT INVOICE' });
+                    setInvoiceSettings({ ...invoiceSettings, active_template: 'mobile', invoice_title: 'INVOICE' });
                     setTermsSubTab('invoice');
                   }}
                 >
@@ -823,7 +823,7 @@ export const SettingsPage = ({ initialTab = 'company', onSettingsUpdate }) => {
                   type="button"
                   className={`format-pill-btn ${invoiceSettings.active_template === 'thermal' ? 'pill-active' : ''}`}
                   onClick={() => {
-                    setInvoiceSettings({ ...invoiceSettings, active_template: 'thermal', invoice_title: 'CASH MEMO' });
+                    setInvoiceSettings({ ...invoiceSettings, active_template: 'thermal', invoice_title: 'INVOICE' });
                     setTermsSubTab('invoice');
                   }}
                 >
