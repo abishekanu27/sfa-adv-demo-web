@@ -199,17 +199,19 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
     const defaultArea = areas[0] || 'Broadway Wholesale Market';
     setTaxType(taxFilter === 'non_gst' ? 'NON_GST' : 'GST');
 
-    // Auto-calculate the next sequential customer code
-    const maxCodeNum = customers.reduce((max, c) => {
-      const match = (c.customer_code || '').match(/(\d+)$/);
-      if (match) {
-        const val = parseInt(match[1], 10);
-        return val > max ? val : max;
+    // Auto-calculate unique random customer code like CI47HB153
+    const generateRandomCustomerCode = () => {
+      const chars = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+      let randomPart = '';
+      for (let i = 0; i < 7; i++) {
+        randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
       }
-      const idVal = parseInt(c.customer_id || c.id, 10);
-      return !isNaN(idVal) && idVal > max ? idVal : max;
-    }, 0);
-    const initialCode = `CUST-${String(maxCodeNum + 1).padStart(3, '0')}`;
+      return `CI${randomPart}`;
+    };
+    let initialCode = generateRandomCustomerCode();
+    while (customers.some(c => c.customer_code === initialCode)) {
+      initialCode = generateRandomCustomerCode();
+    }
 
     setFormData({
       customer_code: initialCode,
