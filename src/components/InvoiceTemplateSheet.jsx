@@ -257,13 +257,36 @@ export const InvoiceTemplateSheet = ({
     const qty = parseFloat(item.qty != null ? item.qty : item.quantity) || 1;
     const rate = parseFloat(item.rate != null ? item.rate : item.unit_price) || 0;
     const gross = qty * rate;
-    const lineTaxable = parseFloat(item.taxable_amount != null ? item.taxable_amount : gross);
     const gstRate = parseFloat(item.gst_rate) || (isInvoiceGst ? 18 : 0);
-    const cgst = parseFloat(item.cgst != null ? item.cgst : (isInvoiceGst ? lineTaxable * (gstRate / 200) : 0));
-    const sgst = parseFloat(item.sgst != null ? item.sgst : (isInvoiceGst ? lineTaxable * (gstRate / 200) : 0));
     const rawLineTotal = parseFloat(item.total != null ? item.total : item.total_price);
-    const computedLineTotal = lineTaxable + cgst + sgst;
-    const lineTotal = (!isNaN(rawLineTotal) && rawLineTotal > 0) ? rawLineTotal : (computedLineTotal > 0 ? computedLineTotal : gross);
+    const lineTotal = (!isNaN(rawLineTotal) && rawLineTotal > 0) ? rawLineTotal : gross;
+
+    let lineTaxable = lineTotal;
+    let cgst = 0;
+    let sgst = 0;
+
+    if (isInvoiceGst && gstRate > 0) {
+      if (
+        item.taxable_amount != null &&
+        parseFloat(item.taxable_amount) < lineTotal &&
+        parseFloat(item.taxable_amount) > 0
+      ) {
+        lineTaxable = parseFloat(item.taxable_amount);
+        const diffGst = Math.max(0, lineTotal - lineTaxable);
+        cgst = parseFloat(item.cgst != null ? item.cgst : (item.cgst_amount != null ? item.cgst_amount : diffGst / 2));
+        sgst = parseFloat(item.sgst != null ? item.sgst : (item.sgst_amount != null ? item.sgst_amount : diffGst / 2));
+      } else {
+        // Selling price / lineTotal is GST inclusive: Taxable Value = lineTotal / (1 + gstRate / 100)
+        lineTaxable = Math.round((lineTotal / (1 + gstRate / 100)) * 100) / 100;
+        const lineGst = Math.round((lineTotal - lineTaxable) * 100) / 100;
+        cgst = Math.round((lineGst / 2) * 100) / 100;
+        sgst = Math.round((lineGst - cgst) * 100) / 100;
+      }
+    } else {
+      lineTaxable = lineTotal;
+      cgst = 0;
+      sgst = 0;
+    }
 
     return {
       id: idx + 1,
@@ -281,9 +304,8 @@ export const InvoiceTemplateSheet = ({
     };
   });
 
-  // Calculate Sub Total (Gross) - sum of item amounts
-  const subtotalGross = items.reduce((sum, i) => sum + (i.qty * i.rate), 0);
-  const grossTaxable = isInvoiceGst ? items.reduce((sum, i) => sum + i.taxable, 0) : subtotalGross;
+  // Calculate Sub Total (Gross) - sum of line totals (inclusive of GST)
+  const subtotalGross = items.reduce((sum, i) => sum + i.total, 0);
 
   // Fetch Total Discount from DB if present (discount_amount / discount)
   const dbDiscount = parseFloat(
@@ -291,20 +313,42 @@ export const InvoiceTemplateSheet = ({
       ? activeInvoice.discount_amount 
       : (activeInvoice.discount != null ? activeInvoice.discount : 0)
   ) || 0;
-  const itemsDiscount = items.reduce((sum, i) => sum + (parseFloat(i.discount_amount) || 0), 0);
-  const totalDiscount = dbDiscount > 0 ? dbDiscount : itemsDiscount;
+  const itemsDiscount = items.reduce((sum, i) => sum + (parseFloat(itemDiscount => itemDiscount.discount_amount) || 0), 0);
+  const totalDiscount = dbDiscount > 0 ? dbDiscount : (activeInvoice.discount ? parseFloat(activeInvoice.discount) : 0);
 
-  // Total Taxable Value after applying total discount
-  const totalTaxable = Math.max(0, grossTaxable - totalDiscount);
-  const discountFactor = grossTaxable > 0 ? (totalTaxable / grossTaxable) : 1;
+  // Final discounted total
+  const netGross = Math.max(0, subtotalGross - totalDiscount);
+  const discountFactor = subtotalGross > 0 ? (netGross / subtotalGross) : 1;
 
-  // CGST & SGST calculated based on final taxable value
-  const totalCgst = items.reduce((sum, i) => sum + (isInvoiceGst ? (i.taxable * discountFactor * (i.gst_rate / 200)) : 0), 0);
-  const totalSgst = items.reduce((sum, i) => sum + (isInvoiceGst ? (i.taxable * discountFactor * (i.gst_rate / 200)) : 0), 0);
+  // Total Taxable Value & Taxes calculated after applying total discount
+  // Taxable Value = Total - GST (for each discounted item)
+  let totalTaxable = 0;
+  let totalCgst = 0;
+  let totalSgst = 0;
+
+  if (isInvoiceGst) {
+    items.forEach(i => {
+      const discountedItemTotal = i.total * discountFactor;
+      if (i.gst_rate > 0) {
+        const itemTaxable = Math.round((discountedItemTotal / (1 + i.gst_rate / 100)) * 100) / 100;
+        const itemGst = Math.round((discountedItemTotal - itemTaxable) * 100) / 100;
+        const itemCgst = Math.round((itemGst / 2) * 100) / 100;
+        const itemSgst = Math.round((itemGst - itemCgst) * 100) / 100;
+        totalTaxable += itemTaxable;
+        totalCgst += itemCgst;
+        totalSgst += itemSgst;
+      } else {
+        totalTaxable += discountedItemTotal;
+      }
+    });
+  } else {
+    totalTaxable = netGross;
+  }
+
   const totalGst = totalCgst + totalSgst;
 
-  // Grand Total calculation: Total Taxable Value + CGST + SGST (less Total Discount, already netted in taxable)
-  const calculatedGrandTotal = isInvoiceGst ? (totalTaxable + totalGst) : Math.max(0, subtotalGross - totalDiscount);
+  // Grand Total calculation: Total Taxable Value + CGST + SGST (exact match with netGross)
+  const calculatedGrandTotal = isInvoiceGst ? (totalTaxable + totalGst) : netGross;
   const rawGrandTotal = parseFloat(activeInvoice.grand_total != null ? activeInvoice.grand_total : (activeInvoice.total_amount != null ? activeInvoice.total_amount : activeInvoice.amount));
   
   const dbRoundOff = activeInvoice.round_off != null ? parseFloat(activeInvoice.round_off) : null;

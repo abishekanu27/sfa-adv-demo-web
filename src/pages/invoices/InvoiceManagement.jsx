@@ -193,26 +193,23 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
 
     const isNonGst = formData.invoice_type === 'NON_GST';
     const effectiveGst = isNonGst ? 0 : (parseFloat(currItem.gst_rate) || 0);
-    const taxable = currItem.qty * currItem.rate;
-    const taxAmt = isNonGst ? 0 : taxable * (effectiveGst / 100);
-    const total = taxable + taxAmt;
+    const gross = Math.round(currItem.qty * currItem.rate * 100) / 100;
+    const taxable = isNonGst || effectiveGst === 0 ? gross : Math.round((gross / (1 + effectiveGst / 100)) * 100) / 100;
+    const taxAmt = isNonGst || effectiveGst === 0 ? 0 : Math.round((gross - taxable) * 100) / 100;
+    const total = gross;
 
     const newItem = {
       ...currItem,
       gst_rate: effectiveGst,
-      taxable_amount: Math.round(taxable * 100) / 100,
-      tax_amount: Math.round(taxAmt * 100) / 100,
-      total: Math.round(total * 100) / 100
+      taxable_amount: taxable,
+      tax_amount: taxAmt,
+      total: total
     };
 
     const newItems = [...formData.items, newItem];
-    const newSubtotal = newItems.reduce((acc, itm) => acc + (itm.qty * itm.rate), 0);
+    const newSubtotal = newItems.reduce((acc, itm) => acc + (itm.total != null ? itm.total : itm.qty * itm.rate), 0);
     const disc = parseFloat(formData.discount_amount) || 0;
-    const newTaxable = Math.max(0, newSubtotal - disc);
-    const factor = newSubtotal > 0 ? (newTaxable / newSubtotal) : 1;
-    const newTax = isNonGst ? 0 : newItems.reduce((acc, itm) => acc + (itm.qty * itm.rate * factor * ((parseFloat(itm.gst_rate) || 0) / 100)), 0);
-    const exact = isNonGst ? newTaxable : (newTaxable + newTax);
-    const grand = Math.round(exact);
+    const grand = Math.max(0, Math.round(newSubtotal - disc));
 
     setFormData(prev => ({
       ...prev,
@@ -237,13 +234,9 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
   const handleRemoveItem = (index) => {
     const isNonGst = formData.invoice_type === 'NON_GST';
     const newItems = formData.items.filter((_, i) => i !== index);
-    const newSubtotal = newItems.reduce((acc, itm) => acc + (itm.qty * itm.rate), 0);
+    const newSubtotal = newItems.reduce((acc, itm) => acc + (itm.total != null ? itm.total : itm.qty * itm.rate), 0);
     const disc = parseFloat(formData.discount_amount) || 0;
-    const newTaxable = Math.max(0, newSubtotal - disc);
-    const factor = newSubtotal > 0 ? (newTaxable / newSubtotal) : 1;
-    const newTax = isNonGst ? 0 : newItems.reduce((acc, itm) => acc + (itm.qty * itm.rate * factor * ((parseFloat(itm.gst_rate) || 0) / 100)), 0);
-    const exact = isNonGst ? newTaxable : (newTaxable + newTax);
-    const grand = Math.round(exact);
+    const grand = Math.max(0, Math.round(newSubtotal - disc));
 
     setFormData(prev => ({
       ...prev,
@@ -366,11 +359,32 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
 
   // Calculate modal live totals
   const isModalNonGst = formData.invoice_type === 'NON_GST';
-  const modalSubtotal = formData.items.reduce((acc, itm) => acc + (itm.qty * itm.rate), 0);
+  const modalSubtotal = formData.items.reduce((acc, itm) => acc + (itm.total != null ? itm.total : itm.qty * itm.rate), 0);
   const modalDiscount = parseFloat(formData.discount_amount) || 0;
-  const modalTaxable = Math.max(0, modalSubtotal - modalDiscount);
-  const modalDiscountFactor = modalSubtotal > 0 ? (modalTaxable / modalSubtotal) : 1;
-  const modalTax = isModalNonGst ? 0 : formData.items.reduce((acc, itm) => acc + (itm.qty * itm.rate * modalDiscountFactor * ((parseFloat(itm.gst_rate) || 0) / 100)), 0);
+  const modalNetGross = Math.max(0, modalSubtotal - modalDiscount);
+  const modalDiscountFactor = modalSubtotal > 0 ? (modalNetGross / modalSubtotal) : 1;
+
+  let modalTaxable = 0;
+  let modalTax = 0;
+  if (isModalNonGst) {
+    modalTaxable = modalNetGross;
+    modalTax = 0;
+  } else {
+    formData.items.forEach(itm => {
+      const itemTotal = (itm.total != null ? itm.total : itm.qty * itm.rate) * modalDiscountFactor;
+      const gstRate = parseFloat(itm.gst_rate) || 0;
+      if (gstRate > 0) {
+        const itemTaxable = Math.round((itemTotal / (1 + gstRate / 100)) * 100) / 100;
+        const itemGst = Math.round((itemTotal - itemTaxable) * 100) / 100;
+        modalTaxable += itemTaxable;
+        modalTax += itemGst;
+      } else {
+        modalTaxable += itemTotal;
+      }
+    });
+    modalTaxable = Math.round(modalTaxable * 100) / 100;
+    modalTax = Math.round(modalTax * 100) / 100;
+  }
   const modalExactTotal = isModalNonGst ? modalTaxable : (modalTaxable + modalTax);
   const autoRoundOff = Math.round((Math.round(modalExactTotal) - modalExactTotal) * 100) / 100;
   const modalRoundOff = (formData.round_off !== '' && formData.round_off !== undefined)
@@ -1015,11 +1029,8 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
                           value={formData.discount_amount}
                           onChange={(e) => {
                             const disc = parseFloat(e.target.value) || 0;
-                            const taxable = Math.max(0, modalSubtotal - disc);
-                            const factor = modalSubtotal > 0 ? (taxable / modalSubtotal) : 1;
-                            const tax = isModalNonGst ? 0 : formData.items.reduce((acc, itm) => acc + (itm.qty * itm.rate * factor * ((parseFloat(itm.gst_rate) || 0) / 100)), 0);
-                            const exact = isModalNonGst ? taxable : (taxable + tax);
-                            const grand = Math.round(exact);
+                            const net = Math.max(0, modalSubtotal - disc);
+                            const grand = Math.round(net);
                             setFormData(prev => ({
                               ...prev,
                               discount_amount: e.target.value,
