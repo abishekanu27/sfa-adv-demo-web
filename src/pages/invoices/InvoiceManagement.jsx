@@ -207,8 +207,11 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
 
     const newItems = [...formData.items, newItem];
     const newSubtotal = newItems.reduce((acc, itm) => acc + (itm.qty * itm.rate), 0);
-    const newTax = isNonGst ? 0 : newItems.reduce((acc, itm) => acc + (itm.qty * itm.rate * ((parseFloat(itm.gst_rate) || 0) / 100)), 0);
-    const exact = Math.max(0, newSubtotal + newTax - (parseFloat(formData.discount_amount) || 0));
+    const disc = parseFloat(formData.discount_amount) || 0;
+    const newTaxable = Math.max(0, newSubtotal - disc);
+    const factor = newSubtotal > 0 ? (newTaxable / newSubtotal) : 1;
+    const newTax = isNonGst ? 0 : newItems.reduce((acc, itm) => acc + (itm.qty * itm.rate * factor * ((parseFloat(itm.gst_rate) || 0) / 100)), 0);
+    const exact = isNonGst ? newTaxable : (newTaxable + newTax);
     const grand = Math.round(exact);
 
     setFormData(prev => ({
@@ -235,8 +238,11 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
     const isNonGst = formData.invoice_type === 'NON_GST';
     const newItems = formData.items.filter((_, i) => i !== index);
     const newSubtotal = newItems.reduce((acc, itm) => acc + (itm.qty * itm.rate), 0);
-    const newTax = isNonGst ? 0 : newItems.reduce((acc, itm) => acc + (itm.qty * itm.rate * ((parseFloat(itm.gst_rate) || 0) / 100)), 0);
-    const exact = Math.max(0, newSubtotal + newTax - (parseFloat(formData.discount_amount) || 0));
+    const disc = parseFloat(formData.discount_amount) || 0;
+    const newTaxable = Math.max(0, newSubtotal - disc);
+    const factor = newSubtotal > 0 ? (newTaxable / newSubtotal) : 1;
+    const newTax = isNonGst ? 0 : newItems.reduce((acc, itm) => acc + (itm.qty * itm.rate * factor * ((parseFloat(itm.gst_rate) || 0) / 100)), 0);
+    const exact = isNonGst ? newTaxable : (newTaxable + newTax);
     const grand = Math.round(exact);
 
     setFormData(prev => ({
@@ -361,8 +367,11 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
   // Calculate modal live totals
   const isModalNonGst = formData.invoice_type === 'NON_GST';
   const modalSubtotal = formData.items.reduce((acc, itm) => acc + (itm.qty * itm.rate), 0);
-  const modalTax = isModalNonGst ? 0 : formData.items.reduce((acc, itm) => acc + (itm.qty * itm.rate * ((parseFloat(itm.gst_rate) || 0) / 100)), 0);
-  const modalExactTotal = Math.max(0, modalSubtotal + modalTax - (parseFloat(formData.discount_amount) || 0));
+  const modalDiscount = parseFloat(formData.discount_amount) || 0;
+  const modalTaxable = Math.max(0, modalSubtotal - modalDiscount);
+  const modalDiscountFactor = modalSubtotal > 0 ? (modalTaxable / modalSubtotal) : 1;
+  const modalTax = isModalNonGst ? 0 : formData.items.reduce((acc, itm) => acc + (itm.qty * itm.rate * modalDiscountFactor * ((parseFloat(itm.gst_rate) || 0) / 100)), 0);
+  const modalExactTotal = isModalNonGst ? modalTaxable : (modalTaxable + modalTax);
   const autoRoundOff = Math.round((Math.round(modalExactTotal) - modalExactTotal) * 100) / 100;
   const modalRoundOff = (formData.round_off !== '' && formData.round_off !== undefined)
     ? (Math.round((parseFloat(formData.round_off) || 0) * 100) / 100)
@@ -982,14 +991,8 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
                   <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
                     <div style={{ width: '320px', background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                        <span>Subtotal:</span>
+                        <span>Sub Total (Gross):</span>
                         <span>₹{modalSubtotal.toFixed(2)}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                        <span>GST Tax:</span>
-                        <span>
-                          {formData.invoice_type === 'NON_GST' ? '₹0.00 (Non-GST)' : `₹${modalTax.toFixed(2)}`}
-                        </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', color: '#dc2626' }}>
                         <span style={{ fontWeight: '600' }}>Total Discount (₹):</span>
@@ -1012,7 +1015,10 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
                           value={formData.discount_amount}
                           onChange={(e) => {
                             const disc = parseFloat(e.target.value) || 0;
-                            const exact = Math.max(0, modalSubtotal + modalTax - disc);
+                            const taxable = Math.max(0, modalSubtotal - disc);
+                            const factor = modalSubtotal > 0 ? (taxable / modalSubtotal) : 1;
+                            const tax = isModalNonGst ? 0 : formData.items.reduce((acc, itm) => acc + (itm.qty * itm.rate * factor * ((parseFloat(itm.gst_rate) || 0) / 100)), 0);
+                            const exact = isModalNonGst ? taxable : (taxable + tax);
                             const grand = Math.round(exact);
                             setFormData(prev => ({
                               ...prev,
@@ -1021,6 +1027,16 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
                             }));
                           }}
                         />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <span>Total Taxable Value:</span>
+                        <span>₹{modalTaxable.toFixed(2)}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <span>GST Tax ({formData.invoice_type === 'NON_GST' ? '0%' : 'CGST + SGST'}):</span>
+                        <span>
+                          {formData.invoice_type === 'NON_GST' ? '₹0.00 (Non-GST)' : `₹${modalTax.toFixed(2)}`}
+                        </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '12.5px', color: '#64748b' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

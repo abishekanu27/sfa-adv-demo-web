@@ -95,6 +95,38 @@ export const numberToWordsINR = (num) => {
   return words;
 };
 
+export const wrapItemDescription13 = (name, maxLen = 13) => {
+  if (!name) return [];
+  const words = String(name).split(/\s+/);
+  const lines = [];
+  let current = '';
+  for (const word of words) {
+    if (!current) {
+      if (word.length > maxLen) {
+        for (let i = 0; i < word.length; i += maxLen) {
+          lines.push(word.slice(i, i + maxLen));
+        }
+      } else {
+        current = word;
+      }
+    } else if ((current + ' ' + word).length <= maxLen) {
+      current += ' ' + word;
+    } else {
+      lines.push(current);
+      if (word.length > maxLen) {
+        for (let i = 0; i < word.length; i += maxLen) {
+          lines.push(word.slice(i, i + maxLen));
+        }
+        current = '';
+      } else {
+        current = word;
+      }
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+};
+
 export const InvoiceTemplateSheet = ({
   invoice,
   companySettings = {},
@@ -123,10 +155,10 @@ export const InvoiceTemplateSheet = ({
     round_off: -0.40,
     balance_due: 0.00,
     items: [
-      { id: 1, name: 'Masala Tea Premium 250g', product_name: 'Masala Tea Premium 250g', hsn_code: '0902', hsn: '0902', qty: 20, unit: 'pkts', rate: 120.00, unit_price: 120.00, discount: 5, gst_rate: 5 },
-      { id: 2, name: 'Whole Grain Atta 5kg', product_name: 'Whole Grain Atta 5kg', hsn_code: '1101', hsn: '1101', qty: 10, unit: 'bags', rate: 240.00, unit_price: 240.00, discount: 0, gst_rate: 0 },
-      { id: 3, name: 'Refined Sunflower Oil 1L', product_name: 'Refined Sunflower Oil 1L', hsn_code: '1512', hsn: '1512', qty: 15, unit: 'ltrs', rate: 135.00, unit_price: 135.00, discount: 2, gst_rate: 5 },
-      { id: 4, name: 'Instant Noodles 70g (Pack of 12)', product_name: 'Instant Noodles 70g (Pack of 12)', hsn_code: '1902', hsn: '1902', qty: 8, unit: 'cartons', rate: 180.00, unit_price: 180.00, discount: 10, gst_rate: 12 }
+      { id: 1, name: 'Masala Tea Premium 250g', product_name: 'Masala Tea Premium 250g', hsn_code: '0902', hsn: '0902', qty: 20, unit: 'pkts', rate: 120.00, unit_price: 120.00, gst_rate: 5 },
+      { id: 2, name: 'Whole Grain Atta 5kg', product_name: 'Whole Grain Atta 5kg', hsn_code: '1101', hsn: '1101', qty: 10, unit: 'bags', rate: 240.00, unit_price: 240.00, gst_rate: 0 },
+      { id: 3, name: 'Refined Sunflower Oil 1L', product_name: 'Refined Sunflower Oil 1L', hsn_code: '1512', hsn: '1512', qty: 15, unit: 'ltrs', rate: 135.00, unit_price: 135.00, gst_rate: 5 },
+      { id: 4, name: 'Instant Noodles 70g (Pack of 12)', product_name: 'Instant Noodles 70g (Pack of 12)', hsn_code: '1902', hsn: '1902', qty: 8, unit: 'cartons', rate: 180.00, unit_price: 180.00, gst_rate: 12 }
     ]
   };
 
@@ -224,16 +256,14 @@ export const InvoiceTemplateSheet = ({
   const items = rawItems.map((item, idx) => {
     const qty = parseFloat(item.qty != null ? item.qty : item.quantity) || 1;
     const rate = parseFloat(item.rate != null ? item.rate : item.unit_price) || 0;
-    const disc = parseFloat(item.discount) || 0;
     const gross = qty * rate;
-    const discAmt = gross * (disc / 100);
-    const lineTaxable = parseFloat(item.taxable_amount != null ? item.taxable_amount : (gross - discAmt));
+    const lineTaxable = parseFloat(item.taxable_amount != null ? item.taxable_amount : gross);
     const gstRate = parseFloat(item.gst_rate) || (isInvoiceGst ? 18 : 0);
     const cgst = parseFloat(item.cgst != null ? item.cgst : (isInvoiceGst ? lineTaxable * (gstRate / 200) : 0));
     const sgst = parseFloat(item.sgst != null ? item.sgst : (isInvoiceGst ? lineTaxable * (gstRate / 200) : 0));
     const rawLineTotal = parseFloat(item.total != null ? item.total : item.total_price);
     const computedLineTotal = lineTaxable + cgst + sgst;
-    const lineTotal = (!isNaN(rawLineTotal) && rawLineTotal > 0) ? rawLineTotal : (computedLineTotal > 0 ? computedLineTotal : (!isNaN(rawLineTotal) ? rawLineTotal : 0));
+    const lineTotal = (!isNaN(rawLineTotal) && rawLineTotal > 0) ? rawLineTotal : (computedLineTotal > 0 ? computedLineTotal : gross);
 
     return {
       id: idx + 1,
@@ -243,7 +273,6 @@ export const InvoiceTemplateSheet = ({
       qty,
       unit: item.unit || item.package_type || 'Pcs',
       rate,
-      discount: disc,
       taxable: lineTaxable,
       gst_rate: gstRate,
       cgst,
@@ -252,34 +281,37 @@ export const InvoiceTemplateSheet = ({
     };
   });
 
-  // Calculate Totals
-  const totalTaxable = items.reduce((sum, i) => sum + i.taxable, 0);
-  const totalCgst = items.reduce((sum, i) => sum + i.cgst, 0);
-  const totalSgst = items.reduce((sum, i) => sum + i.sgst, 0);
-  const totalGst = totalCgst + totalSgst;
-  const calculatedGrandTotal = isInvoiceGst ? (totalTaxable + totalGst) : items.reduce((sum, i) => sum + i.total, 0);
-
-  const rawGrandTotal = parseFloat(activeInvoice.grand_total != null ? activeInvoice.grand_total : (activeInvoice.total_amount != null ? activeInvoice.total_amount : activeInvoice.amount));
-  const grandTotal = (!isNaN(rawGrandTotal) && rawGrandTotal > 0) 
-    ? rawGrandTotal 
-    : (calculatedGrandTotal > 0 ? calculatedGrandTotal : (!isNaN(rawGrandTotal) ? rawGrandTotal : 0));
-  const paidAmount = parseFloat(activeInvoice.paid_amount) || grandTotal;
-  const balanceDue = parseFloat(activeInvoice.balance_due != null ? activeInvoice.balance_due : Math.max(0, grandTotal - paidAmount));
+  // Calculate Sub Total (Gross) - sum of item amounts
   const subtotalGross = items.reduce((sum, i) => sum + (i.qty * i.rate), 0);
+  const grossTaxable = isInvoiceGst ? items.reduce((sum, i) => sum + i.taxable, 0) : subtotalGross;
 
-  // Fetch Total Discount from DB if present (discount_amount / discount), or calculate from items discounts
+  // Fetch Total Discount from DB if present (discount_amount / discount)
   const dbDiscount = parseFloat(
     activeInvoice.discount_amount != null 
       ? activeInvoice.discount_amount 
       : (activeInvoice.discount != null ? activeInvoice.discount : 0)
   ) || 0;
-  const itemsDiscount = items.reduce((sum, i) => sum + (parseFloat(i.discount_amount) || (i.qty * i.rate * ((parseFloat(i.discount) || 0) / 100)) || 0), 0);
+  const itemsDiscount = items.reduce((sum, i) => sum + (parseFloat(i.discount_amount) || 0), 0);
   const totalDiscount = dbDiscount > 0 ? dbDiscount : itemsDiscount;
 
-  // Round Off: fetch from DB (activeInvoice.round_off) or calculate difference to nearest integer
-  const netBeforeRound = isInvoiceGst ? (totalTaxable + totalGst) : (subtotalGross - totalDiscount);
+  // Total Taxable Value after applying total discount
+  const totalTaxable = Math.max(0, grossTaxable - totalDiscount);
+  const discountFactor = grossTaxable > 0 ? (totalTaxable / grossTaxable) : 1;
+
+  // CGST & SGST calculated based on final taxable value
+  const totalCgst = items.reduce((sum, i) => sum + (isInvoiceGst ? (i.taxable * discountFactor * (i.gst_rate / 200)) : 0), 0);
+  const totalSgst = items.reduce((sum, i) => sum + (isInvoiceGst ? (i.taxable * discountFactor * (i.gst_rate / 200)) : 0), 0);
+  const totalGst = totalCgst + totalSgst;
+
+  // Grand Total calculation: Total Taxable Value + CGST + SGST (less Total Discount, already netted in taxable)
+  const calculatedGrandTotal = isInvoiceGst ? (totalTaxable + totalGst) : Math.max(0, subtotalGross - totalDiscount);
+  const rawGrandTotal = parseFloat(activeInvoice.grand_total != null ? activeInvoice.grand_total : (activeInvoice.total_amount != null ? activeInvoice.total_amount : activeInvoice.amount));
+  
   const dbRoundOff = activeInvoice.round_off != null ? parseFloat(activeInvoice.round_off) : null;
-  const roundOff = dbRoundOff != null ? dbRoundOff : (Math.round((grandTotal - netBeforeRound) * 100) / 100);
+  const roundOff = dbRoundOff != null ? dbRoundOff : (Math.round((Math.round(calculatedGrandTotal) - calculatedGrandTotal) * 100) / 100);
+  const grandTotal = Math.round((calculatedGrandTotal + roundOff) * 100) / 100;
+  const paidAmount = parseFloat(activeInvoice.paid_amount) || grandTotal;
+  const balanceDue = parseFloat(activeInvoice.balance_due != null ? activeInvoice.balance_due : Math.max(0, grandTotal - paidAmount));
 
   const upiPayLink = `upi://pay?pa=${encodeURIComponent(company.upi_id)}&pn=${encodeURIComponent(company.legal_name || company.company_name)}&am=${grandTotal.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Invoice ${invoiceNo}`)}`;
   const upiQrUrl = (settings.show_upi_qr && company.upi_id)
@@ -437,19 +469,18 @@ export const InvoiceTemplateSheet = ({
               <tr>
                 <th style={{ width: '35px' }}>#</th>
                 <th>Product Description</th>
-                {settings.show_hsn && <th style={{ width: '70px' }}>HSN</th>}
-                <th style={{ width: '60px' }}>Qty</th>
-                <th style={{ width: '50px' }}>Unit</th>
+                {settings.show_hsn && <th style={{ width: '70px', textAlign: 'center' }}>HSN</th>}
+                <th style={{ width: '60px', textAlign: 'center' }}>Qty</th>
+                <th style={{ width: '50px', textAlign: 'center' }}>Unit</th>
                 <th style={{ width: '80px', textAlign: 'right' }}>Rate (₹)</th>
-                <th style={{ width: '60px', textAlign: 'right' }}>Disc %</th>
-                <th style={{ width: '90px', textAlign: 'right' }}>Taxable Val</th>
+                <th style={{ width: '95px', textAlign: 'right' }}>Taxable Value</th>
                 {settings.show_gst_breakdown && (
                   <>
-                    <th style={{ width: '65px', textAlign: 'right' }}>CGST</th>
-                    <th style={{ width: '65px', textAlign: 'right' }}>SGST</th>
+                    <th style={{ width: '70px', textAlign: 'right' }}>CGST</th>
+                    <th style={{ width: '70px', textAlign: 'right' }}>SGST</th>
                   </>
                 )}
-                <th style={{ width: '90px', textAlign: 'right' }}>Total (₹)</th>
+                <th style={{ width: '95px', textAlign: 'right' }}>Total (₹)</th>
               </tr>
             </thead>
             <tbody>
@@ -460,19 +491,20 @@ export const InvoiceTemplateSheet = ({
                     <strong>{item.name}</strong>
                     {item.package_type && <small style={{ color: '#64748b', display: 'block' }}>({item.package_type})</small>}
                   </td>
-                  {settings.show_hsn && <td>{item.hsn}</td>}
-                  <td>{item.qty}</td>
-                  <td>{item.unit}</td>
+                  {settings.show_hsn && <td style={{ textAlign: 'center' }}>{item.hsn}</td>}
+                  <td style={{ textAlign: 'center' }}>{item.qty}</td>
+                  <td style={{ textAlign: 'center' }}>{item.unit}</td>
                   <td style={{ textAlign: 'right' }}>{item.rate.toFixed(2)}</td>
-                  <td style={{ textAlign: 'right' }}>{item.discount > 0 ? `${item.discount}%` : '—'}</td>
                   <td style={{ textAlign: 'right' }}>{item.taxable.toFixed(2)}</td>
                   {settings.show_gst_breakdown && (
                     <>
                       <td style={{ textAlign: 'right' }}>
-                        {item.cgst > 0 ? `${item.cgst.toFixed(2)} (${item.gst_rate / 2}%)` : '0.00'}
+                        {item.cgst > 0 ? `${item.cgst.toFixed(2)}` : '0.00'}
+                        {item.gst_rate > 0 && <span style={{ color: '#64748b', display: 'block', fontSize: '9px' }}>({item.gst_rate / 2}%)</span>}
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        {item.sgst > 0 ? `${item.sgst.toFixed(2)} (${item.gst_rate / 2}%)` : '0.00'}
+                        {item.sgst > 0 ? `${item.sgst.toFixed(2)}` : '0.00'}
+                        {item.gst_rate > 0 && <span style={{ color: '#64748b', display: 'block', fontSize: '9px' }}>({item.gst_rate / 2}%)</span>}
                       </td>
                     </>
                   )}
@@ -515,6 +547,12 @@ export const InvoiceTemplateSheet = ({
                     <td>Sub Total (Gross):</td>
                     <td className="text-right">₹{subtotalGross.toFixed(2)}</td>
                   </tr>
+                  {totalDiscount > 0 && (
+                    <tr className="total-discount-row">
+                      <td><strong>Total Discount:</strong></td>
+                      <td className="text-right text-danger"><strong>- ₹{totalDiscount.toFixed(2)}</strong></td>
+                    </tr>
+                  )}
                   <tr>
                     <td>Total Taxable Value:</td>
                     <td className="text-right">₹{totalTaxable.toFixed(2)}</td>
@@ -530,12 +568,6 @@ export const InvoiceTemplateSheet = ({
                         <td className="text-right">+ ₹{totalSgst.toFixed(2)}</td>
                       </tr>
                     </>
-                  )}
-                  {totalDiscount > 0 && (
-                    <tr className="total-discount-row">
-                      <td><strong>Total Discount:</strong></td>
-                      <td className="text-right text-danger"><strong>- ₹{totalDiscount.toFixed(2)}</strong></td>
-                    </tr>
                   )}
                   {roundOff !== 0 && (
                     <tr className="round-off-row" style={{ color: '#64748b', fontSize: '12px' }}>
@@ -626,12 +658,11 @@ export const InvoiceTemplateSheet = ({
           <table className="normal-items-table">
             <thead>
               <tr>
-                <th>#</th>
+                <th style={{ width: '35px' }}>#</th>
                 <th>Item Description</th>
-                <th style={{ textAlign: 'center' }}>Quantity</th>
-                <th style={{ textAlign: 'right' }}>Price / Unit</th>
-                <th style={{ textAlign: 'right' }}>Discount</th>
-                <th style={{ textAlign: 'right' }}>Total Amount</th>
+                <th style={{ textAlign: 'center', width: '90px' }}>Quantity</th>
+                <th style={{ textAlign: 'right', width: '100px' }}>Price / Unit</th>
+                <th style={{ textAlign: 'right', width: '110px' }}>Total Amount</th>
               </tr>
             </thead>
             <tbody>
@@ -641,7 +672,6 @@ export const InvoiceTemplateSheet = ({
                   <td><strong>{item.name}</strong></td>
                   <td style={{ textAlign: 'center' }}>{item.qty} {item.unit}</td>
                   <td style={{ textAlign: 'right' }}>₹{item.rate.toFixed(2)}</td>
-                  <td style={{ textAlign: 'right' }}>{item.discount > 0 ? `${item.discount}%` : '—'}</td>
                   <td style={{ textAlign: 'right', fontWeight: 600 }}>₹{item.total.toFixed(2)}</td>
                 </tr>
               ))}
@@ -744,84 +774,100 @@ export const InvoiceTemplateSheet = ({
 
           <table className="thermal-items-table">
             <thead>
-              {isInvoiceGst ? (
-                <tr>
-                  <th style={{ textAlign: 'left', width: '14px' }}>#</th>
-                  <th style={{ textAlign: 'left' }}>ITEM NAME</th>
-                  <th style={{ textAlign: 'center' }}>HSN</th>
-                  <th style={{ textAlign: 'center' }}>QTY</th>
-                  <th style={{ textAlign: 'center' }}>UNIT</th>
-                  <th style={{ textAlign: 'right' }}>RATE</th>
-                  <th style={{ textAlign: 'right' }}>TAXABLE</th>
-                  <th style={{ textAlign: 'right' }}>CGST</th>
-                  <th style={{ textAlign: 'right' }}>SGST</th>
-                  <th style={{ textAlign: 'right' }}>TOTAL</th>
-                </tr>
-              ) : (
-                <tr>
-                  <th style={{ textAlign: 'left', width: '16px' }}>#</th>
-                  <th style={{ textAlign: 'left' }}>ITEM NAME</th>
-                  <th style={{ textAlign: 'center' }}>QTY</th>
-                  <th style={{ textAlign: 'center' }}>UNIT</th>
-                  <th style={{ textAlign: 'right' }}>RATE</th>
-                  <th style={{ textAlign: 'right' }}>AMOUNT</th>
-                </tr>
-              )}
+              <tr>
+                <th style={{ textAlign: 'left', width: '18px' }}>#</th>
+                <th style={{ textAlign: 'left' }}>ITEM</th>
+                <th style={{ textAlign: 'center', width: '32px' }}>QTY</th>
+                <th style={{ textAlign: 'center', width: '36px', paddingRight: '8px' }}>UNIT</th>
+                <th style={{ textAlign: 'right', width: '56px', paddingLeft: '8px' }}>RATE</th>
+                <th style={{ textAlign: 'right', width: '64px' }}>AMOUNT</th>
+              </tr>
             </thead>
             <tbody>
               {items.map((item, idx) => (
-                isInvoiceGst ? (
-                  <tr key={item.id}>
-                    <td style={{ textAlign: 'left' }}>{idx + 1}</td>
-                    <td style={{ textAlign: 'left' }}>
-                      <strong>{item.name}</strong>
-                      {item.package_type && <small style={{ color: '#64748b', display: 'block', fontSize: '7.5px' }}>({item.package_type})</small>}
-                    </td>
-                    <td style={{ textAlign: 'center' }}>{item.hsn || '1905'}</td>
-                    <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{item.qty}</td>
-                    <td style={{ textAlign: 'center' }}>{item.unit}</td>
-                    <td style={{ textAlign: 'right' }}>{item.rate.toFixed(2)}</td>
-                    <td style={{ textAlign: 'right' }}>{item.taxable.toFixed(2)}</td>
-                    <td style={{ textAlign: 'right', fontSize: '8px' }}>
-                      {item.cgst.toFixed(2)}
-                      <span style={{ color: '#64748b', display: 'block', fontSize: '7px' }}>({item.gst_rate / 2}%)</span>
-                    </td>
-                    <td style={{ textAlign: 'right', fontSize: '8px' }}>
-                      {item.sgst.toFixed(2)}
-                      <span style={{ color: '#64748b', display: 'block', fontSize: '7px' }}>({item.gst_rate / 2}%)</span>
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{item.total.toFixed(2)}</td>
-                  </tr>
-                ) : (
-                  <tr key={item.id}>
-                    <td style={{ textAlign: 'left' }}>{idx + 1}</td>
-                    <td style={{ textAlign: 'left' }}><strong>{item.name}</strong></td>
-                    <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{item.qty}</td>
-                    <td style={{ textAlign: 'center' }}>{item.unit}</td>
-                    <td style={{ textAlign: 'right' }}>{item.rate.toFixed(2)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{item.total.toFixed(2)}</td>
-                  </tr>
-                )
+                <tr key={item.id} style={{ verticalAlign: 'top' }}>
+                  <td style={{ textAlign: 'left', padding: '3px 1px' }}>{idx + 1}</td>
+                  <td style={{ textAlign: 'left', padding: '3px 2px', wordBreak: 'break-word', maxWidth: '120px' }}>
+                    {wrapItemDescription13(item.name).map((line, lIdx) => (
+                      <div key={lIdx} style={{ fontWeight: 'bold' }}>{line}</div>
+                    ))}
+                    {item.package_type && <small style={{ color: '#64748b', display: 'block', fontSize: '8px' }}>({item.package_type})</small>}
+                  </td>
+                  <td style={{ textAlign: 'center', fontWeight: 'bold', padding: '3px 2px', whiteSpace: 'nowrap' }}>{item.qty}</td>
+                  <td style={{ textAlign: 'center', color: '#64748b', padding: '3px 2px', paddingRight: '8px', whiteSpace: 'nowrap' }}>{item.unit}</td>
+                  <td style={{ textAlign: 'right', padding: '3px 2px', paddingLeft: '8px', whiteSpace: 'nowrap' }}>₹{item.rate.toFixed(2)}</td>
+                  <td style={{ textAlign: 'right', fontWeight: 'bold', padding: '3px 2px', whiteSpace: 'nowrap' }}>₹{item.total.toFixed(2)}</td>
+                </tr>
               ))}
             </tbody>
           </table>
 
+          {/* GST Breakdown Table matching attached invoice image */}
+          {isInvoiceGst && (
+            <>
+              <div className="thermal-dash-line">----------------------------------------</div>
+              <div style={{ margin: '3px 0', border: '0.5px solid #a1a1aa', borderRadius: '3px', padding: '4px 6px', background: '#fafafa' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.5fr 1fr 1fr', fontSize: '8.5px', fontWeight: 'bold', borderBottom: '0.5px dashed #71717a', paddingBottom: '2px', color: '#0f172a' }}>
+                  <span>GST%</span>
+                  <span style={{ textAlign: 'right' }}>TaxableAmt</span>
+                  <span style={{ textAlign: 'right' }}>CGSTAmt</span>
+                  <span style={{ textAlign: 'right' }}>SGSTAmt</span>
+                </div>
+                {(() => {
+                  const ratesMap = new Map();
+                  items.forEach(it => {
+                    const gRate = parseFloat(it.gst_rate) || 0;
+                    if (gRate > 0) {
+                      const taxable = it.taxable * discountFactor;
+                      const cgst = taxable * (gRate / 200);
+                      const sgst = taxable * (gRate / 200);
+                      if (!ratesMap.has(gRate)) {
+                        ratesMap.set(gRate, { taxable, cgst, sgst });
+                      } else {
+                        const prev = ratesMap.get(gRate);
+                        prev.taxable += taxable;
+                        prev.cgst += cgst;
+                        prev.sgst += sgst;
+                      }
+                    }
+                  });
+                  if (ratesMap.size > 0) {
+                    return Array.from(ratesMap.entries()).map(([gRate, val]) => (
+                      <div key={gRate} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.5fr 1fr 1fr', fontSize: '8.5px', paddingTop: '3px', color: '#18181b' }}>
+                        <span>GST {gRate}%</span>
+                        <span style={{ textAlign: 'right' }}>₹{val.taxable.toFixed(2)}</span>
+                        <span style={{ textAlign: 'right' }}>₹{val.cgst.toFixed(2)}</span>
+                        <span style={{ textAlign: 'right' }}>₹{val.sgst.toFixed(2)}</span>
+                      </div>
+                    ));
+                  }
+                  return (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.5fr 1fr 1fr', fontSize: '8.5px', paddingTop: '3px', color: '#18181b' }}>
+                      <span>GST {grossTaxable > 0 ? ((totalGst / (totalTaxable || 1)) * 100).toFixed(0) : '0'}%</span>
+                      <span style={{ textAlign: 'right' }}>₹{totalTaxable.toFixed(2)}</span>
+                      <span style={{ textAlign: 'right' }}>₹{totalCgst.toFixed(2)}</span>
+                      <span style={{ textAlign: 'right' }}>₹{totalSgst.toFixed(2)}</span>
+                    </div>
+                  );
+                })()}
+              </div>
+            </>
+          )}
+
           <div className="thermal-dash-line">----------------------------------------</div>
           <div className="thermal-totals-block">
-            {isInvoiceGst ? (
-              <>
-                <div className="t-row"><span>Sub Total (Gross):</span> <span>₹{subtotalGross.toFixed(2)}</span></div>
-                <div className="t-row"><span>Total Taxable Value:</span> <span>₹{totalTaxable.toFixed(2)}</span></div>
-                <div className="t-row" style={{ color: '#1d4ed8' }}><span>Central GST (CGST):</span> <span>+ ₹{totalCgst.toFixed(2)}</span></div>
-                <div className="t-row" style={{ color: '#1d4ed8' }}><span>State GST (SGST):</span> <span>+ ₹{totalSgst.toFixed(2)}</span></div>
-              </>
-            ) : (
-              <div className="t-row"><span>Sub Total (Gross):</span> <span>₹{subtotalGross.toFixed(2)}</span></div>
-            )}
+            <div className="t-row"><span>Sub Total (Gross):</span> <span>₹{subtotalGross.toFixed(2)}</span></div>
             {totalDiscount > 0 && (
               <div className="t-row" style={{ color: '#dc2626', fontWeight: 'bold' }}>
                 <span>Total Discount:</span> <span>- ₹{totalDiscount.toFixed(2)}</span>
               </div>
+            )}
+            {isInvoiceGst && (
+              <>
+                <div className="t-row"><span>Total Taxable Value:</span> <span>₹{totalTaxable.toFixed(2)}</span></div>
+                <div className="t-row" style={{ color: '#1d4ed8' }}><span>Central GST (CGST):</span> <span>+ ₹{totalCgst.toFixed(2)}</span></div>
+                <div className="t-row" style={{ color: '#1d4ed8' }}><span>State GST (SGST):</span> <span>+ ₹{totalSgst.toFixed(2)}</span></div>
+              </>
             )}
             {roundOff !== 0 && (
               <div className="t-row" style={{ color: '#64748b', fontSize: '8.5px' }}>
