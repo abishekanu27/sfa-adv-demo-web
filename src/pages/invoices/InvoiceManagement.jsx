@@ -97,6 +97,7 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
     hsn_code: '1905',
     package_type: 'Box',
     qty: 1,
+    mrp: 0,
     rate: 0,
     gst_rate: 18
   });
@@ -172,13 +173,17 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
     if (prod) {
       const isNonGst = formData.invoice_type === 'NON_GST';
       const defaultGst = prod.gst_rate?.includes('5%') ? 5 : prod.gst_rate?.includes('12%') ? 12 : prod.gst_rate?.includes('28%') ? 28 : 18;
+      const rateVal = parseFloat(prod.selling_price) || 100;
+      const mrpVal = parseFloat(prod.mrp) > 0 ? parseFloat(prod.mrp) : rateVal;
       setCurrItem(prev => ({
         ...prev,
         product_id: prod.product_id,
         product_name: prod.name,
         sku: prod.sku || '',
         hsn_code: prod.hsn_code || (isNonGst ? '' : '1905'),
-        rate: parseFloat(prod.selling_price) || 100,
+        unit: prod.unit || 'Pcs',
+        mrp: mrpVal,
+        rate: rateVal,
         gst_rate: isNonGst ? 0 : defaultGst
       }));
     }
@@ -200,6 +205,7 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
 
     const newItem = {
       ...currItem,
+      mrp: parseFloat(currItem.mrp) > 0 ? parseFloat(currItem.mrp) : currItem.rate,
       gst_rate: effectiveGst,
       taxable_amount: taxable,
       tax_amount: taxAmt,
@@ -225,6 +231,7 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
       hsn_code: isNonGst ? '' : '1905',
       package_type: 'Box',
       qty: 1,
+      mrp: 0,
       rate: 0,
       gst_rate: isNonGst ? 0 : 18
     });
@@ -962,6 +969,7 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
                           <th>HSN</th>
                           <th>Package</th>
                           <th>Qty</th>
+                          <th>MRP (₹)</th>
                           <th>Rate (₹)</th>
                           <th>Taxable (₹)</th>
                           <th>{formData.invoice_type === 'NON_GST' ? 'Tax' : 'GST (₹)'}</th>
@@ -976,6 +984,7 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
                             <td>{itm.hsn_code || '-'}</td>
                             <td>{itm.package_type}</td>
                             <td>{itm.qty}</td>
+                            <td>₹{itm.mrp != null ? itm.mrp : itm.rate}</td>
                             <td>₹{itm.rate}</td>
                             <td>₹{itm.taxable_amount}</td>
                             <td>

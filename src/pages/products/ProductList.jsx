@@ -65,6 +65,7 @@ export const ProductList = ({
     unit: 'Pcs',
     package_type: 'Box',
     items_per_package: '1',
+    mrp: '',
     selling_price: '',
     box_price: '',
     cost_price: '',
@@ -138,6 +139,7 @@ export const ProductList = ({
       unit: 'Pcs',
       package_type: 'Box',
       items_per_package: '1',
+      mrp: '',
       selling_price: '',
       box_price: '',
       cost_price: '',
@@ -170,6 +172,7 @@ export const ProductList = ({
       unit: prod.unit || 'Pcs',
       package_type: prod.package_type || 'Box',
       items_per_package: String(prod.items_per_package || 1),
+      mrp: prod.mrp !== undefined && prod.mrp !== null ? String(prod.mrp) : '',
       selling_price: prod.selling_price || '',
       box_price: prod.box_price !== undefined ? String(prod.box_price) : '',
       cost_price: prod.cost_price || '',
@@ -492,6 +495,7 @@ export const ProductList = ({
                 <th style={{ width: '90px' }}>SKU</th>
                 <th>Category</th>
                 <th style={{ width: '105px' }}>Cost Price (₹)</th>
+                <th style={{ width: '105px' }}>MRP (₹)</th>
                 <th style={{ width: '115px' }}>Piece Price (₹)</th>
                 <th style={{ width: '135px' }}>Box / Bag Price (₹)</th>
                 <th style={{ width: '125px' }}>GST Rate</th>
@@ -506,7 +510,7 @@ export const ProductList = ({
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="14" style={{ padding: '60px 24px', textAlign: 'center' }}>
+                  <td colSpan="15" style={{ padding: '60px 24px', textAlign: 'center' }}>
                     <PageLoader 
                       message="Loading product & stock catalog..." 
                       subtext="Fetching SKU records, live inventory, inward batches, and cost valuations" 
@@ -515,7 +519,7 @@ export const ProductList = ({
                 </tr>
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan="14" className="empty-products-cell">
+                  <td colSpan="15" className="empty-products-cell">
                     <div className="empty-state-wrap">
                       <span className="empty-message-text">No product found matching your search or category filter.</span>
                     </div>
@@ -559,6 +563,9 @@ export const ProductList = ({
                         </span>
                       </td>
                       <td>₹{costPrice.toLocaleString('en-IN')}</td>
+                      <td style={{ fontWeight: '600', color: '#475569' }}>
+                        ₹{parseFloat(prod.mrp || prod.selling_price || 0).toLocaleString('en-IN')}
+                      </td>
                       <td className="price-bold">
                         ₹{sellingPrice.toLocaleString('en-IN')}
                         <small className="cell-subtext">/{prod.unit || 'Pc'}</small>
@@ -754,11 +761,11 @@ export const ProductList = ({
                   border: '1.5px solid #e2e8f0',
                   marginBottom: '16px'
                 }}>
-                  {/* Row 1: Measurement Unit & Piece Selling Price */}
-                  <div className="form-row-2" style={{ marginBottom: '14px' }}>
+                  {/* Row 1: Measurement Unit, MRP, & Piece Selling Price */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1.2fr', gap: '14px', marginBottom: '14px' }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label style={{ fontWeight: '700', color: '#0f172a' }}>
-                        Measurement Unit (KG, gram, litre, etc.) *
+                        Measurement Unit *
                       </label>
                       <select
                         value={productForm.unit || 'Pcs'}
@@ -782,7 +789,22 @@ export const ProductList = ({
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label style={{ fontWeight: '700', color: '#0f172a' }}>
-                        Piece Selling Price (₹ / {productForm.unit || 'Pcs'}) *
+                        MRP (₹ / {productForm.unit || 'Unit'})
+                      </label>
+                      <input 
+                        type="number" 
+                        min="0"
+                        step="any"
+                        placeholder={productForm.selling_price ? `e.g. ${productForm.selling_price}` : 'e.g. 60'}
+                        value={productForm.mrp}
+                        onChange={(e) => setProductForm({ ...productForm, mrp: e.target.value })}
+                        style={{ background: '#ffffff', fontWeight: '700', color: '#1e3a8a' }}
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label style={{ fontWeight: '700', color: '#0f172a' }}>
+                        Selling Price (₹ / {productForm.unit || 'Unit'}) *
                       </label>
                       <input 
                         type="number" 
@@ -799,6 +821,7 @@ export const ProductList = ({
                           setProductForm({ 
                             ...productForm, 
                             selling_price: val,
+                            mrp: productForm.mrp || val,
                             box_price: shouldAutoUpdateBox && val ? String((parseFloat(val) || 0) * items) : productForm.box_price
                           });
                         }}

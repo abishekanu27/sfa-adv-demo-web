@@ -288,6 +288,8 @@ export const InvoiceTemplateSheet = ({
       sgst = 0;
     }
 
+    const mrp = parseFloat(item.mrp != null ? item.mrp : item.mrp_price) || rate;
+
     return {
       id: idx + 1,
       name: item.product_name || item.name || 'Product Item',
@@ -295,6 +297,7 @@ export const InvoiceTemplateSheet = ({
       package_type: item.package_type || item.unit || 'Loose',
       qty,
       unit: item.unit || item.package_type || 'Pcs',
+      mrp,
       rate,
       taxable: lineTaxable,
       gst_rate: gstRate,
@@ -514,10 +517,11 @@ export const InvoiceTemplateSheet = ({
                 <th style={{ width: '35px' }}>#</th>
                 <th>Product Description</th>
                 {settings.show_hsn && <th style={{ width: '70px', textAlign: 'center' }}>HSN</th>}
-                <th style={{ width: '60px', textAlign: 'center' }}>Qty</th>
-                <th style={{ width: '50px', textAlign: 'center' }}>Unit</th>
-                <th style={{ width: '80px', textAlign: 'right' }}>Rate (₹)</th>
-                <th style={{ width: '95px', textAlign: 'right' }}>Taxable Value</th>
+                <th style={{ width: '55px', textAlign: 'center' }}>Qty</th>
+                <th style={{ width: '45px', textAlign: 'center' }}>Unit</th>
+                <th style={{ width: '75px', textAlign: 'right' }}>MRP (₹)</th>
+                <th style={{ width: '75px', textAlign: 'right' }}>Rate (₹)</th>
+                <th style={{ width: '90px', textAlign: 'right' }}>Taxable Value</th>
                 {settings.show_gst_breakdown && (
                   <>
                     <th style={{ width: '70px', textAlign: 'right' }}>CGST</th>
@@ -538,6 +542,7 @@ export const InvoiceTemplateSheet = ({
                   {settings.show_hsn && <td style={{ textAlign: 'center' }}>{item.hsn}</td>}
                   <td style={{ textAlign: 'center' }}>{item.qty}</td>
                   <td style={{ textAlign: 'center' }}>{item.unit}</td>
+                  <td style={{ textAlign: 'right' }}>{item.mrp.toFixed(2)}</td>
                   <td style={{ textAlign: 'right' }}>{item.rate.toFixed(2)}</td>
                   <td style={{ textAlign: 'right' }}>{item.taxable.toFixed(2)}</td>
                   {settings.show_gst_breakdown && (
@@ -704,9 +709,10 @@ export const InvoiceTemplateSheet = ({
               <tr>
                 <th style={{ width: '35px' }}>#</th>
                 <th>Item Description</th>
-                <th style={{ textAlign: 'center', width: '90px' }}>Quantity</th>
-                <th style={{ textAlign: 'right', width: '100px' }}>Price / Unit</th>
-                <th style={{ textAlign: 'right', width: '110px' }}>Total Amount</th>
+                <th style={{ textAlign: 'center', width: '85px' }}>Quantity</th>
+                <th style={{ textAlign: 'right', width: '90px' }}>MRP (₹)</th>
+                <th style={{ textAlign: 'right', width: '95px' }}>Price / Unit</th>
+                <th style={{ textAlign: 'right', width: '105px' }}>Total Amount</th>
               </tr>
             </thead>
             <tbody>
@@ -715,6 +721,7 @@ export const InvoiceTemplateSheet = ({
                   <td>{idx + 1}</td>
                   <td><strong>{item.name}</strong></td>
                   <td style={{ textAlign: 'center' }}>{item.qty} {item.unit}</td>
+                  <td style={{ textAlign: 'right' }}>₹{item.mrp.toFixed(2)}</td>
                   <td style={{ textAlign: 'right' }}>₹{item.rate.toFixed(2)}</td>
                   <td style={{ textAlign: 'right', fontWeight: 600 }}>₹{item.total.toFixed(2)}</td>
                 </tr>
@@ -819,28 +826,30 @@ export const InvoiceTemplateSheet = ({
           <table className="thermal-items-table">
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', width: '18px' }}>#</th>
+                <th style={{ textAlign: 'left', width: '16px' }}>#</th>
                 <th style={{ textAlign: 'left' }}>ITEM</th>
-                <th style={{ textAlign: 'center', width: '32px' }}>QTY</th>
-                <th style={{ textAlign: 'center', width: '36px', paddingRight: '8px' }}>UNIT</th>
-                <th style={{ textAlign: 'right', width: '56px', paddingLeft: '8px' }}>RATE</th>
-                <th style={{ textAlign: 'right', width: '64px' }}>AMOUNT</th>
+                <th style={{ textAlign: 'center', width: '28px' }}>QTY</th>
+                <th style={{ textAlign: 'center', width: '30px' }}>UNIT</th>
+                <th style={{ textAlign: 'right', width: '42px' }}>MRP</th>
+                <th style={{ textAlign: 'right', width: '42px' }}>RATE</th>
+                <th style={{ textAlign: 'right', width: '48px' }}>TOTAL</th>
               </tr>
             </thead>
             <tbody>
               {items.map((item, idx) => (
                 <tr key={item.id} style={{ verticalAlign: 'top' }}>
                   <td style={{ textAlign: 'left', padding: '3px 1px' }}>{idx + 1}</td>
-                  <td style={{ textAlign: 'left', padding: '3px 2px', wordBreak: 'break-word', maxWidth: '120px' }}>
+                  <td style={{ textAlign: 'left', padding: '3px 2px', wordBreak: 'break-word', maxWidth: '105px' }}>
                     {wrapItemDescription13(item.name).map((line, lIdx) => (
                       <div key={lIdx} style={{ fontWeight: 'bold' }}>{line}</div>
                     ))}
                     {item.package_type && <small style={{ color: '#64748b', display: 'block', fontSize: '8px' }}>({item.package_type})</small>}
                   </td>
-                  <td style={{ textAlign: 'center', fontWeight: 'bold', padding: '3px 2px', whiteSpace: 'nowrap' }}>{item.qty}</td>
-                  <td style={{ textAlign: 'center', color: '#64748b', padding: '3px 2px', paddingRight: '8px', whiteSpace: 'nowrap' }}>{item.unit}</td>
-                  <td style={{ textAlign: 'right', padding: '3px 2px', paddingLeft: '8px', whiteSpace: 'nowrap' }}>₹{item.rate.toFixed(2)}</td>
-                  <td style={{ textAlign: 'right', fontWeight: 'bold', padding: '3px 2px', whiteSpace: 'nowrap' }}>₹{item.total.toFixed(2)}</td>
+                  <td style={{ textAlign: 'center', fontWeight: 'bold', padding: '3px 1px', whiteSpace: 'nowrap' }}>{item.qty}</td>
+                  <td style={{ textAlign: 'center', color: '#64748b', padding: '3px 1px', whiteSpace: 'nowrap' }}>{item.unit}</td>
+                  <td style={{ textAlign: 'right', padding: '3px 1px', whiteSpace: 'nowrap' }}>₹{item.mrp.toFixed(2)}</td>
+                  <td style={{ textAlign: 'right', padding: '3px 1px', whiteSpace: 'nowrap' }}>₹{item.rate.toFixed(2)}</td>
+                  <td style={{ textAlign: 'right', fontWeight: 'bold', padding: '3px 1px', whiteSpace: 'nowrap' }}>₹{item.total.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -900,7 +909,6 @@ export const InvoiceTemplateSheet = ({
 
           <div className="thermal-dash-line">----------------------------------------</div>
           <div className="thermal-totals-block">
-            <div className="t-row"><span>Sub Total (Gross):</span> <span>₹{subtotalGross.toFixed(2)}</span></div>
             {totalDiscount > 0 && (
               <div className="t-row" style={{ color: '#dc2626', fontWeight: 'bold' }}>
                 <span>Total Discount:</span> <span>- ₹{totalDiscount.toFixed(2)}</span>
@@ -913,6 +921,10 @@ export const InvoiceTemplateSheet = ({
                 <div className="t-row" style={{ color: '#1d4ed8' }}><span>State GST (SGST):</span> <span>+ ₹{totalSgst.toFixed(2)}</span></div>
               </>
             )}
+            <div className="t-row">
+              <span style={{ color: '#475569' }}>Items: {items.length} ({items.reduce((acc, it) => acc + (Number(it.qty) || 0), 0)} Units)</span>
+              <span>Sub Total: ₹{subtotalGross.toFixed(2)}</span>
+            </div>
             {roundOff !== 0 && (
               <div className="t-row" style={{ color: '#64748b', fontSize: '8.5px' }}>
                 <span>Round Off:</span> <span>{roundOff > 0 ? `+ ₹${roundOff.toFixed(2)}` : `- ₹${Math.abs(roundOff).toFixed(2)}`}</span>
