@@ -172,7 +172,7 @@ export const ProductList = ({
       unit: prod.unit || 'Pcs',
       package_type: prod.package_type || 'Box',
       items_per_package: String(prod.items_per_package || 1),
-      mrp: prod.mrp !== undefined && prod.mrp !== null ? String(prod.mrp) : '',
+      mrp: prod.mrp !== undefined && prod.mrp !== null && prod.mrp !== '' ? String(parseFloat(prod.mrp) ?? prod.mrp) : '',
       selling_price: prod.selling_price || '',
       box_price: prod.box_price !== undefined ? String(prod.box_price) : '',
       cost_price: prod.cost_price || '',
