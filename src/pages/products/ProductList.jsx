@@ -66,6 +66,7 @@ export const ProductList = ({
     package_type: 'Box',
     items_per_package: '1',
     mrp: '',
+    box_mrp: '',
     selling_price: '',
     box_price: '',
     cost_price: '',
@@ -140,6 +141,7 @@ export const ProductList = ({
       package_type: 'Box',
       items_per_package: '1',
       mrp: '',
+      box_mrp: '',
       selling_price: '',
       box_price: '',
       cost_price: '',
@@ -173,6 +175,7 @@ export const ProductList = ({
       package_type: prod.package_type || 'Box',
       items_per_package: String(prod.items_per_package || 1),
       mrp: prod.mrp !== undefined && prod.mrp !== null && prod.mrp !== '' ? String(parseFloat(prod.mrp) ?? prod.mrp) : '',
+      box_mrp: prod.box_mrp !== undefined && prod.box_mrp !== null && prod.box_mrp !== '' ? String(parseFloat(prod.box_mrp) ?? prod.box_mrp) : '',
       selling_price: prod.selling_price || '',
       box_price: prod.box_price !== undefined ? String(prod.box_price) : '',
       cost_price: prod.cost_price || '',
@@ -564,7 +567,12 @@ export const ProductList = ({
                       </td>
                       <td>₹{costPrice.toLocaleString('en-IN')}</td>
                       <td style={{ fontWeight: '600', color: '#475569' }}>
-                        ₹{parseFloat(prod.mrp || prod.selling_price || 0).toLocaleString('en-IN')}
+                        <div>₹{parseFloat(prod.mrp || prod.selling_price || 0).toLocaleString('en-IN')}</div>
+                        {parseFloat(prod.box_mrp || 0) > 0 && (
+                          <small className="cell-subtext" style={{ display: 'block', color: '#64748b' }}>
+                            {prod.package_type || 'Bag'}: ₹{parseFloat(prod.box_mrp).toLocaleString('en-IN')}
+                          </small>
+                        )}
                       </td>
                       <td className="price-bold">
                         ₹{sellingPrice.toLocaleString('en-IN')}
@@ -797,7 +805,17 @@ export const ProductList = ({
                         step="any"
                         placeholder={productForm.selling_price ? `e.g. ${productForm.selling_price}` : 'e.g. 60'}
                         value={productForm.mrp}
-                        onChange={(e) => setProductForm({ ...productForm, mrp: e.target.value })}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const items = parseInt(productForm.items_per_package, 10) || 1;
+                          const oldCalculated = String((parseFloat(productForm.mrp) || 0) * items);
+                          const shouldAutoUpdateBoxMrp = !productForm.box_mrp || productForm.box_mrp === oldCalculated;
+                          setProductForm({ 
+                            ...productForm, 
+                            mrp: val,
+                            box_mrp: shouldAutoUpdateBoxMrp && val ? String((parseFloat(val) || 0) * items) : productForm.box_mrp
+                          });
+                        }}
                         style={{ background: '#ffffff', fontWeight: '700', color: '#1e3a8a' }}
                       />
                     </div>
@@ -830,8 +848,8 @@ export const ProductList = ({
                     </div>
                   </div>
 
-                  {/* Row 2: Packaging Type, Units per Box, and Box Selling Price */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.3fr', gap: '14px', alignItems: 'flex-start' }}>
+                  {/* Row 2: Packaging Type, Units per Box, Box MRP, and Box Selling Price */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.1fr 1.2fr', gap: '14px', alignItems: 'flex-start' }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label style={{ color: '#0f172a', fontWeight: '700' }}>Packaging Type *</label>
                       <select
@@ -863,12 +881,16 @@ export const ProductList = ({
                           const itemsVal = e.target.value;
                           const items = parseInt(itemsVal, 10) || 1;
                           const pieceRate = parseFloat(productForm.selling_price) || 0;
+                          const pieceMrp = parseFloat(productForm.mrp) || 0;
                           const oldCalculated = String(pieceRate * (parseInt(productForm.items_per_package, 10) || 1));
+                          const oldCalculatedMrp = String(pieceMrp * (parseInt(productForm.items_per_package, 10) || 1));
                           const shouldAutoUpdateBox = !productForm.box_price || productForm.box_price === oldCalculated;
+                          const shouldAutoUpdateBoxMrp = !productForm.box_mrp || productForm.box_mrp === oldCalculatedMrp;
                           setProductForm({ 
                             ...productForm, 
                             items_per_package: itemsVal,
-                            box_price: shouldAutoUpdateBox && pieceRate > 0 ? String(pieceRate * items) : productForm.box_price
+                            box_price: shouldAutoUpdateBox && pieceRate > 0 ? String(pieceRate * items) : productForm.box_price,
+                            box_mrp: shouldAutoUpdateBoxMrp && pieceMrp > 0 ? String(pieceMrp * items) : productForm.box_mrp
                           });
                         }}
                         style={{ background: '#ffffff' }}
@@ -876,11 +898,29 @@ export const ProductList = ({
                     </div>
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label style={{ color: '#1e3a8a', fontWeight: '700' }}>
+                        {productForm.package_type || 'Box'} MRP (₹)
+                      </label>
+                      <input 
+                        type="number" 
+                        min="0"
+                        step="any"
+                        placeholder={productForm.mrp ? `e.g. ${(parseFloat(productForm.mrp) || 0) * (parseInt(productForm.items_per_package, 10) || 1)}` : 'e.g. 600'}
+                        value={productForm.box_mrp}
+                        onChange={(e) => setProductForm({ ...productForm, box_mrp: e.target.value })}
+                        style={{ background: '#ffffff', fontWeight: '700', color: '#1e3a8a' }}
+                      />
+                      <small style={{ color: '#64748b', fontSize: '11px', marginTop: '3px', display: 'block' }}>
+                        MRP for 1 {productForm.package_type || 'Box'}
+                      </small>
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: 0 }}>
                       <label style={{ color: '#0284c7', fontWeight: '800' }}>
                         {productForm.package_type || 'Box'} Selling Price (₹) *
                       </label>
                       <input 
-                        type="number"
+                        type="number" 
                         min="0"
                         step="any"
                         required

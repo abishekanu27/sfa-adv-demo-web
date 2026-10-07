@@ -168,24 +168,53 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
   };
 
   // Handle Product Select for Item
-  const handleProductSelect = (prodId) => {
+  const handleProductSelect = (prodId, selectedPkgType = currItem.package_type) => {
     const prod = products.find(p => String(p.product_id) === String(prodId));
     if (prod) {
       const isNonGst = formData.invoice_type === 'NON_GST';
       const defaultGst = prod.gst_rate?.includes('5%') ? 5 : prod.gst_rate?.includes('12%') ? 12 : prod.gst_rate?.includes('28%') ? 28 : 18;
-      const rateVal = parseFloat(prod.selling_price) || 100;
-      const mrpVal = parseFloat(prod.mrp) > 0 ? parseFloat(prod.mrp) : rateVal;
+      const isPkg = selectedPkgType === 'Box' || selectedPkgType === 'Bag' || selectedPkgType === 'Carton';
+      const rateVal = isPkg
+        ? (parseFloat(prod.box_price) > 0 ? parseFloat(prod.box_price) : (parseFloat(prod.selling_price) || 0) * (parseInt(prod.items_per_package) || 1))
+        : (parseFloat(prod.selling_price) || 100);
+      const pieceMrp = parseFloat(prod.mrp) > 0 ? parseFloat(prod.mrp) : (parseFloat(prod.selling_price) || 0);
+      const boxMrp = parseFloat(prod.box_mrp) > 0 ? parseFloat(prod.box_mrp) : (pieceMrp * (parseInt(prod.items_per_package) || 1) || rateVal);
+      const mrpVal = isPkg ? boxMrp : pieceMrp;
       setCurrItem(prev => ({
         ...prev,
         product_id: prod.product_id,
         product_name: prod.name,
         sku: prod.sku || '',
         hsn_code: prod.hsn_code || (isNonGst ? '' : '1905'),
-        unit: prod.unit || 'Pcs',
+        unit: isPkg ? (prod.packaging_type || selectedPkgType) : (prod.unit || 'Pcs'),
+        package_type: selectedPkgType,
         mrp: mrpVal,
         rate: rateVal,
         gst_rate: isNonGst ? 0 : defaultGst
       }));
+    }
+  };
+
+  // Handle Package Type Change
+  const handlePackageTypeChange = (newPkgType) => {
+    const prod = products.find(p => String(p.product_id) === String(currItem.product_id));
+    if (prod) {
+      const isPkg = newPkgType === 'Box' || newPkgType === 'Bag' || newPkgType === 'Carton';
+      const rateVal = isPkg
+        ? (parseFloat(prod.box_price) > 0 ? parseFloat(prod.box_price) : (parseFloat(prod.selling_price) || 0) * (parseInt(prod.items_per_package) || 1))
+        : (parseFloat(prod.selling_price) || 100);
+      const pieceMrp = parseFloat(prod.mrp) > 0 ? parseFloat(prod.mrp) : (parseFloat(prod.selling_price) || 0);
+      const boxMrp = parseFloat(prod.box_mrp) > 0 ? parseFloat(prod.box_mrp) : (pieceMrp * (parseInt(prod.items_per_package) || 1) || rateVal);
+      const mrpVal = isPkg ? boxMrp : pieceMrp;
+      setCurrItem(prev => ({
+        ...prev,
+        package_type: newPkgType,
+        unit: isPkg ? (prod.packaging_type || newPkgType) : (prod.unit || 'Pcs'),
+        rate: rateVal,
+        mrp: mrpVal
+      }));
+    } else {
+      setCurrItem(prev => ({ ...prev, package_type: newPkgType }));
     }
   };
 
@@ -868,7 +897,7 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
                   </div>
 
                   {/* Add Item Row */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr auto', gap: '8px', alignItems: 'end', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 0.8fr 1fr 1fr 1fr auto', gap: '8px', alignItems: 'end', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                     <div>
                       <label style={{ fontSize: '11px', fontWeight: '600', color: '#64748b' }}>Product</label>
                       <select
@@ -879,9 +908,9 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
                       >
                         <option value="">-- Choose Product --</option>
                         {products.map(p => (
-                          <option key={p.product_id} value={p.product_id}>
-                            {p.name} (₹{p.selling_price})
-                          </option>
+                            <option key={p.product_id} value={p.product_id}>
+                              {p.name} (Pcs: ₹{p.selling_price}{p.box_price > 0 ? ` | Bag: ₹${p.box_price}` : ''})
+                            </option>
                         ))}
                       </select>
                     </div>
@@ -891,7 +920,7 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
                         className="form-select"
                         style={{ fontSize: '12px', padding: '7px' }}
                         value={currItem.package_type}
-                        onChange={(e) => setCurrItem(prev => ({ ...prev, package_type: e.target.value }))}
+                        onChange={(e) => handlePackageTypeChange(e.target.value)}
                       >
                         <option value="Box">Box</option>
                         <option value="Carton">Carton</option>
@@ -908,6 +937,17 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
                         style={{ fontSize: '12px', padding: '7px' }}
                         value={currItem.qty}
                         onChange={(e) => setCurrItem(prev => ({ ...prev, qty: parseFloat(e.target.value) || 1 }))}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', fontWeight: '600', color: '#64748b' }}>MRP (₹)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="form-input"
+                        style={{ fontSize: '12px', padding: '7px' }}
+                        value={currItem.mrp}
+                        onChange={(e) => setCurrItem(prev => ({ ...prev, mrp: parseFloat(e.target.value) || 0 }))}
                       />
                     </div>
                     <div>
