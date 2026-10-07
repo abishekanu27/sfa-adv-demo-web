@@ -296,7 +296,7 @@ export const InvoiceTemplateSheet = ({
       hsn: item.hsn_code || item.hsn || item.sku || (isInvoiceGst ? '1905' : '—'),
       package_type: item.package_type || item.unit || 'Loose',
       qty,
-      unit: item.unit || item.package_type || 'Pcs',
+      unit: (item.unit && String(item.unit).toLowerCase() === 'loose') ? 'Bag' : (item.unit || item.package_type || 'Pcs'),
       mrp,
       rate,
       taxable: lineTaxable,
