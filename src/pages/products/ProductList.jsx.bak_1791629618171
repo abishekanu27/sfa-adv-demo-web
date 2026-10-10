@@ -218,34 +218,6 @@ export const ProductList = ({
       return;
     }
 
-    const cleanProdName = productForm.name.trim().toLowerCase();
-    const cleanSku = (productForm.sku || '').trim().toUpperCase();
-    const editingId = editingProduct ? (editingProduct.product_id || editingProduct.id) : null;
-
-    // 1. CLIENT-SIDE DUPLICATE PRODUCT NAME VALIDATION
-    const nameConflict = products.find(p => {
-      const pId = p.product_id || p.id;
-      if (editingId && String(pId) === String(editingId)) return false;
-      return p.name && p.name.trim().toLowerCase() === cleanProdName;
-    });
-    if (nameConflict) {
-      showNotification(`A product named "${productForm.name.trim()}" already exists (SKU: ${nameConflict.sku}). Duplicate product name is not allowed.`, 'error');
-      return;
-    }
-
-    // 2. CLIENT-SIDE DUPLICATE SKU VALIDATION
-    if (cleanSku) {
-      const skuConflict = products.find(p => {
-        const pId = p.product_id || p.id;
-        if (editingId && String(pId) === String(editingId)) return false;
-        return p.sku && p.sku.trim().toUpperCase() === cleanSku;
-      });
-      if (skuConflict) {
-        showNotification(`A product with SKU "${cleanSku}" already exists (${skuConflict.name}). Duplicate SKU is not allowed.`, 'error');
-        return;
-      }
-    }
-
     try {
       let targetProductId;
       if (editingProduct) {

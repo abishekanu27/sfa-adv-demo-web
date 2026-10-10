@@ -231,37 +231,6 @@ export const RouteManagement = () => {
       return;
     }
 
-    const cleanRouteName = formData.route_name.trim().toLowerCase();
-    const cleanRouteCode = (formData.route_code || '').trim().toUpperCase();
-    const cleanDist = formData.district.trim().toLowerCase();
-    const cleanBranch = formData.branch_id ? String(formData.branch_id) : '';
-    const editingId = editingRoute ? editingRoute.route_id : null;
-
-    // 1. CLIENT-SIDE DUPLICATE ROUTE CODE VALIDATION
-    if (cleanRouteCode) {
-      const codeConflict = routes.find(r => {
-        if (editingId && String(r.route_id) === String(editingId)) return false;
-        return r.route_code && r.route_code.trim().toUpperCase() === cleanRouteCode;
-      });
-      if (codeConflict) {
-        showNotification(`Route code "${cleanRouteCode}" already exists (${codeConflict.route_name}). Duplicate route code is not allowed.`, 'error');
-        return;
-      }
-    }
-
-    // 2. CLIENT-SIDE DUPLICATE ROUTE NAME VALIDATION (in same district or branch)
-    const nameConflict = routes.find(r => {
-      if (editingId && String(r.route_id) === String(editingId)) return false;
-      const matchName = r.route_name && r.route_name.trim().toLowerCase() === cleanRouteName;
-      const matchBranch = cleanBranch && r.branch_id && String(r.branch_id) === cleanBranch;
-      const matchDist = r.district && r.district.trim().toLowerCase() === cleanDist;
-      return matchName && (matchBranch || matchDist);
-    });
-    if (nameConflict) {
-      showNotification(`Route "${formData.route_name.trim()}" already exists in ${formData.district} (${nameConflict.route_code}). Duplicate route is not allowed.`, 'error');
-      return;
-    }
-
     try {
       setIsSubmitting(true);
       if (editingRoute) {

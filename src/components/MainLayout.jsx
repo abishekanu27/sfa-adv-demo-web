@@ -17,6 +17,7 @@ import { CustomersHub } from '../pages/customers/CustomersHub';
 import { SalesHub } from '../pages/sales/SalesHub';
 import { UsersHub } from '../pages/users/UsersHub';
 import { InvoiceManagement } from '../pages/invoices/InvoiceManagement';
+import { SchemesHub } from '../pages/schemes/SchemesHub';
 import { DashboardPreview } from '../pages/DashboardPreview';
 import { SettingsPage } from '../pages/settings/SettingsPage';
 import { ReportsHub } from '../pages/reports/ReportsHub';
@@ -427,7 +428,20 @@ export const MainLayout = ({ user, onLogout }) => {
             />
           )}
 
-          {/* 5. Invoices */}
+          {/* 5. Schemes & Offers Hub */}
+          {(activeView === 'schemes' || 
+            activeView === 'schemes-list' || 
+            activeView === 'schemes-simulator' || 
+            activeView === 'schemes-add') && (
+            <SchemesHub 
+              initialTab={activeView}
+              onTabChange={(tab) => setActiveView(tab)}
+              user={user}
+              selectedBranchId={selectedBranchId}
+            />
+          )}
+
+          {/* 6. Invoices */}
           {(activeView === 'invoices-list' || activeView === 'invoices') && (
             <InvoiceManagement 
               user={user} 

@@ -140,11 +140,11 @@ export const REPORT_CONFIGS = [
   {
     id: 'gst',
     slug: 'gst',
-    label: 'GST Report',
-    fullTitle: 'GSTR-1 Sales & GST Tax Summary Register',
+    label: 'GST Returns (1, 2B, 3B)',
+    fullTitle: 'GST Statutory Returns Center (GSTR-1, GSTR-2B & GSTR-3B)',
     icon: Building2,
     color: '#0d9488',
-    badge: 'Compliance'
+    badge: 'Statutory Returns'
   },
   {
     id: 'customer-wise',
@@ -243,7 +243,8 @@ export const ReportsHub = ({ initialTab = 'payments', user, selectedBranchId }) 
   const [endDate, setEndDate] = useState('');
   const [datePreset, setDatePreset] = useState('ALL');
   const [secondaryFilter, setSecondaryFilter] = useState('All');
-  const [gstSubTab, setGstSubTab] = useState('all'); // 'all' | 'b2b' | 'b2c' | 'hsn'
+  const [gstReturnMode, setGstReturnMode] = useState('gstr1'); // 'gstr1' | 'gstr2' | 'gstr3b'
+  const [gstSubTab, setGstSubTab] = useState('all'); // gstr1: 'all' | 'b2b' | 'b2c' | 'hsn' | 'docs'; gstr2: 'all' | 'b2b' | 'vendor'; gstr3b: 'all' | '3.1' | '4' | '6.1'
   const [customerFilter, setCustomerFilter] = useState('All');
   const [customersList, setCustomersList] = useState([]);
   const [toastMsg, setToastMsg] = useState('');
@@ -425,9 +426,110 @@ export const ReportsHub = ({ initialTab = 'payments', user, selectedBranchId }) 
     loadReportData(activeConfig.slug, searchQuery, val, startDate, endDate, gstSubTab, customerFilter);
   };
 
+  const handleGstReturnModeChange = (mode) => {
+    setGstReturnMode(mode);
+    setGstSubTab('all');
+  };
+
   const handleGstTabChange = (tab) => {
     setGstSubTab(tab);
-    loadReportData('gst', searchQuery, secondaryFilter, startDate, endDate, tab, customerFilter);
+    if (gstReturnMode === 'gstr1') {
+      if (tab === 'b2b' || tab === 'b2c') {
+        loadReportData('gst', searchQuery, secondaryFilter, startDate, endDate, tab, customerFilter);
+      } else {
+        loadReportData('gst', searchQuery, secondaryFilter, startDate, endDate, 'all', customerFilter);
+      }
+    }
+  };
+
+  // Export official GSTR-1 JSON schema for Government Offline Tool upload
+  const handleExportGstJson = () => {
+    try {
+      if (!reportData?.gstr1) {
+        showToast('No GSTR-1 data available to export.');
+        return;
+      }
+      const g1 = reportData.gstr1;
+      const gstr1Export = {
+        gstin: reportData.compGstin || '32AABCS1429B1Z0',
+        fp: startDate ? startDate.substring(0, 7).replace('-', '') : '102026',
+        gt: g1.summary.totalInvoiceValue || 0,
+        cur_gt: g1.summary.totalInvoiceValue || 0,
+        b2b: (g1.b2b || []).map(inv => ({
+          ctin: inv.customer_gstin,
+          inv: [{
+            inum: inv.invoice_number,
+            idt: inv.invoice_date,
+            val: parseFloat(inv.grand_total) || 0,
+            pos: inv.state_code || '32',
+            rchrg: 'N',
+            inv_typ: 'R',
+            itms: [{
+              num: 1,
+              itm_det: {
+                txval: parseFloat(inv.taxable_value) || 0,
+                rt: parseFloat(inv.total_tax) > 0 ? Math.round((parseFloat(inv.total_tax) / parseFloat(inv.taxable_value)) * 100) : 18,
+                camt: parseFloat(inv.cgst_amount) || 0,
+                samt: parseFloat(inv.sgst_amount) || 0,
+                iamt: parseFloat(inv.igst_amount) || 0,
+                csamt: 0
+              }
+            }]
+          }]
+        })),
+        b2cs: (g1.b2c || []).map(inv => ({
+          sply_ty: 'INTRA',
+          pos: inv.state_code || '32',
+          typ: 'OE',
+          txval: parseFloat(inv.taxable_value) || 0,
+          rt: 18,
+          camt: parseFloat(inv.cgst_amount) || 0,
+          samt: parseFloat(inv.sgst_amount) || 0,
+          csamt: 0
+        })),
+        hsn: {
+          data: (g1.hsnSummary || []).map((h, i) => ({
+            num: i + 1,
+            hsn_sc: h.hsn_code,
+            desc: h.description,
+            uqc: h.uqc,
+            qty: parseFloat(h.total_qty) || 0,
+            val: parseFloat(h.total_value) || 0,
+            txval: parseFloat(h.taxable_value) || 0,
+            iamt: parseFloat(h.igst_amount) || 0,
+            camt: parseFloat(h.cgst_amount) || 0,
+            samt: parseFloat(h.sgst_amount) || 0,
+            csamt: 0
+          }))
+        },
+        doc_issue: {
+          doc_det: [{
+            doc_num: 1,
+            doc_typ: 'Invoices for outward supply',
+            docs: [{
+              num: 1,
+              from: g1.docSummary?.fromSerial || 'INV-0001',
+              to: g1.docSummary?.toSerial || 'INV-0001',
+              totnum: g1.docSummary?.totalNumber || 0,
+              canc: 0,
+              net_issue: g1.docSummary?.netIssued || 0
+            }]
+          }]
+        }
+      };
+
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(gstr1Export, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute('href', dataStr);
+      downloadAnchor.setAttribute('download', `GSTR1_${gstr1Export.fp}_Offline_Upload.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast('Downloaded GSTR-1 JSON for GST Portal Offline Tool!');
+    } catch (err) {
+      console.error('Failed to export GSTR-1 JSON:', err);
+      showToast('Error exporting GSTR-1 JSON');
+    }
   };
 
   const showToast = (msg) => {
@@ -467,39 +569,151 @@ export const ReportsHub = ({ initialTab = 'payments', user, selectedBranchId }) 
         const ws = XLSX.utils.json_to_sheet(customerRows);
         XLSX.utils.book_append_sheet(wb, ws, 'Customer_Purchases');
       } else if (activeConfig.id === 'gst') {
-        if (gstSubTab === 'hsn' && reportData.hsnSummary) {
-          const hsnRows = reportData.hsnSummary.map(h => ({
-            'HSN Code': h.hsn_code,
-            'Description': h.description,
-            'UQC': h.uqc,
-            'Total Quantity': h.total_qty,
-            'Taxable Value (₹)': h.taxable_value,
-            'CGST (₹)': h.cgst_amount,
-            'SGST (₹)': h.sgst_amount,
-            'IGST (₹)': h.igst_amount,
-            'Total Tax (₹)': h.cgst_amount + h.sgst_amount + h.igst_amount
-          }));
-          const ws = XLSX.utils.json_to_sheet(hsnRows);
-          XLSX.utils.book_append_sheet(wb, ws, 'HSN_Summary');
-        } else {
-          const gstRows = (reportData.data || []).map(r => ({
+        if (gstReturnMode === 'gstr1') {
+          const g1 = reportData.gstr1 || {};
+          const b2bRows = (g1.b2b || []).map(r => ({
             'Invoice #': r.invoice_number,
             'Date': r.invoice_date,
             'Customer Name': r.customer_name,
-            'Customer GSTIN': r.customer_gstin || 'Unregistered (B2C)',
-            'Transaction Type': r.transaction_type,
+            'Customer GSTIN': r.customer_gstin,
             'State Code': r.state_code,
-            'Taxable Value (₹)': parseFloat(r.taxable_value),
-            'CGST (₹)': parseFloat(r.cgst_amount),
-            'SGST (₹)': parseFloat(r.sgst_amount),
-            'IGST (₹)': parseFloat(r.igst_amount),
-            'Total Tax (₹)': parseFloat(r.total_tax),
-            'Grand Total (₹)': parseFloat(r.grand_total),
-            'Payment Status': r.payment_status,
+            'Taxable Value (₹)': parseFloat(r.taxable_value) || 0,
+            'CGST (₹)': parseFloat(r.cgst_amount) || 0,
+            'SGST (₹)': parseFloat(r.sgst_amount) || 0,
+            'IGST (₹)': parseFloat(r.igst_amount) || 0,
+            'Total Invoice Value (₹)': parseFloat(r.grand_total) || 0,
+            'Payment Status': r.payment_status
+          }));
+          const wsB2B = XLSX.utils.json_to_sheet(b2bRows);
+          XLSX.utils.book_append_sheet(wb, wsB2B, 'GSTR1_B2B');
+
+          const b2cRows = (g1.b2c || []).map(r => ({
+            'Invoice #': r.invoice_number,
+            'Date': r.invoice_date,
+            'Customer Name': r.customer_name,
+            'State Code': r.state_code,
+            'Taxable Value (₹)': parseFloat(r.taxable_value) || 0,
+            'CGST (₹)': parseFloat(r.cgst_amount) || 0,
+            'SGST (₹)': parseFloat(r.sgst_amount) || 0,
+            'Total Invoice Value (₹)': parseFloat(r.grand_total) || 0,
             'Payment Mode': r.payment_mode
           }));
-          const ws = XLSX.utils.json_to_sheet(gstRows);
-          XLSX.utils.book_append_sheet(wb, ws, 'GSTR1_Invoices');
+          const wsB2C = XLSX.utils.json_to_sheet(b2cRows);
+          XLSX.utils.book_append_sheet(wb, wsB2C, 'GSTR1_B2C_Retail');
+
+          if (g1.hsnSummary && g1.hsnSummary.length > 0) {
+            const hsnRows = g1.hsnSummary.map(h => ({
+              'HSN Code': h.hsn_code,
+              'Description': h.description,
+              'UQC': h.uqc,
+              'Total Quantity': h.total_qty,
+              'Taxable Value (₹)': h.taxable_value,
+              'CGST (₹)': h.cgst_amount,
+              'SGST (₹)': h.sgst_amount,
+              'IGST (₹)': h.igst_amount,
+              'Total Tax (₹)': (h.cgst_amount || 0) + (h.sgst_amount || 0) + (h.igst_amount || 0)
+            }));
+            const wsHsn = XLSX.utils.json_to_sheet(hsnRows);
+            XLSX.utils.book_append_sheet(wb, wsHsn, 'GSTR1_HSN_Summary');
+          }
+
+          if (g1.docSummary) {
+            const docRows = [{
+              'Nature of Document': g1.docSummary.natureOfDoc,
+              'From Serial #': g1.docSummary.fromSerial,
+              'To Serial #': g1.docSummary.toSerial,
+              'Total Number Issued': g1.docSummary.totalNumber,
+              'Cancelled': g1.docSummary.cancelledNumber,
+              'Net Issued': g1.docSummary.netIssued
+            }];
+            const wsDocs = XLSX.utils.json_to_sheet(docRows);
+            XLSX.utils.book_append_sheet(wb, wsDocs, 'GSTR1_Docs_Summary');
+          }
+        } else if (gstReturnMode === 'gstr2') {
+          const g2 = reportData.gstr2 || {};
+          const inRows = (g2.data || []).map(r => ({
+            'PO / Bill #': r.invoice_number,
+            'Bill Date': r.invoice_date,
+            'Supplier Company': r.vendor_name,
+            'Supplier GSTIN': r.vendor_gstin,
+            'Place of Supply': r.place_of_supply,
+            'Supply Type': r.supply_type,
+            'Taxable Value (₹)': parseFloat(r.taxable_value) || 0,
+            'Input CGST (₹)': parseFloat(r.cgst_amount) || 0,
+            'Input SGST (₹)': parseFloat(r.sgst_amount) || 0,
+            'Input IGST (₹)': parseFloat(r.igst_amount) || 0,
+            'Total Bill Amount (₹)': parseFloat(r.grand_total) || 0,
+            'ITC Eligibility': r.itc_status,
+            'ITC Category': r.itc_category
+          }));
+          const wsIn = XLSX.utils.json_to_sheet(inRows);
+          XLSX.utils.book_append_sheet(wb, wsIn, 'GSTR2B_Inward_Purchases');
+
+          if (g2.vendorSummary && g2.vendorSummary.length > 0) {
+            const vRows = g2.vendorSummary.map(v => ({
+              'Vendor Name': v.vendor_name,
+              'GSTIN': v.vendor_gstin,
+              'Bills Count': v.po_count,
+              'Total Purchases (₹)': v.total_purchases,
+              'Taxable Value (₹)': v.taxable_value,
+              'CGST (₹)': v.cgst_amount,
+              'SGST (₹)': v.sgst_amount,
+              'IGST (₹)': v.igst_amount,
+              'Total ITC Available (₹)': v.total_itc
+            }));
+            const wsV = XLSX.utils.json_to_sheet(vRows);
+            XLSX.utils.book_append_sheet(wb, wsV, 'GSTR2B_Vendor_ITC_Summary');
+          }
+        } else if (gstReturnMode === 'gstr3b') {
+          const g3b = reportData.gstr3b || {};
+          const summRows = [{
+            'Gross Output Tax Liability (₹)': g3b.summary?.totalOutputTax || 0,
+            'Eligible Input Tax Credit / ITC (₹)': g3b.summary?.totalInputItc || 0,
+            'ITC Utilized against Liability (₹)': g3b.summary?.totalItcUtilized || 0,
+            'Net Cash Tax Payable (₹)': g3b.summary?.totalCashPayable || 0,
+            'Closing ITC Credit Balance C/F (₹)': g3b.summary?.totalExcessItcBalance || 0,
+            'Compliance Status': g3b.summary?.status || 'Compliant',
+            'Filing Due Date': g3b.summary?.filingDueDate || '20th of the following month'
+          }];
+          const wsSumm = XLSX.utils.json_to_sheet(summRows);
+          XLSX.utils.book_append_sheet(wb, wsSumm, 'GSTR3B_Executive_Summary');
+
+          if (g3b.table31?.rows) {
+            const t31Rows = g3b.table31.rows.map(r => ({
+              'Nature of Supplies': r.nature,
+              'Taxable Value (₹)': r.taxable_value,
+              'Integrated Tax / IGST (₹)': r.igst,
+              'Central Tax / CGST (₹)': r.cgst,
+              'State/UT Tax / SGST (₹)': r.sgst,
+              'Cess (₹)': r.cess
+            }));
+            const wsT31 = XLSX.utils.json_to_sheet(t31Rows);
+            XLSX.utils.book_append_sheet(wb, wsT31, 'Table_3.1_Outward');
+          }
+
+          if (g3b.table4?.rows) {
+            const t4Rows = g3b.table4.rows.map(r => ({
+              'ITC Category': r.nature,
+              'Integrated Tax / IGST (₹)': r.igst,
+              'Central Tax / CGST (₹)': r.cgst,
+              'State/UT Tax / SGST (₹)': r.sgst,
+              'Cess (₹)': r.cess
+            }));
+            const wsT4 = XLSX.utils.json_to_sheet(t4Rows);
+            XLSX.utils.book_append_sheet(wb, wsT4, 'Table_4_Eligible_ITC');
+          }
+
+          if (g3b.table61?.rows) {
+            const t61Rows = g3b.table61.rows.map(r => ({
+              'Tax Description': r.tax_type,
+              'Total Tax Payable (₹)': r.total_tax_payable,
+              'Paid through ITC (₹)': r.paid_through_itc,
+              'Tax Payable in Cash (₹)': r.tax_payable_in_cash,
+              'Balance ITC Carried Forward (₹)': r.balance_itc_cf
+            }));
+            const wsT61 = XLSX.utils.json_to_sheet(t61Rows);
+            XLSX.utils.book_append_sheet(wb, wsT61, 'Table_6.1_Tax_Payment');
+          }
         }
       } else if (activeConfig.id === 'ledger') {
         const ledgerRows = (reportData.data || []).map(r => ({
@@ -602,6 +816,17 @@ export const ReportsHub = ({ initialTab = 'payments', user, selectedBranchId }) 
             <FileSpreadsheet size={16} />
             <span>Export Excel</span>
           </button>
+          {activeConfig.id === 'gst' && gstReturnMode === 'gstr1' && (
+            <button 
+              className="rep-action-btn"
+              style={{ background: '#0d9488', color: '#ffffff', border: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}
+              onClick={handleExportGstJson}
+              title="Download official JSON for GST Offline Tool upload"
+            >
+              <Download size={15} />
+              <span>GSTR-1 JSON</span>
+            </button>
+          )}
           <button 
             className="rep-action-btn rep-btn-print"
             onClick={handlePrint}
@@ -837,33 +1062,135 @@ export const ReportsHub = ({ initialTab = 'payments', user, selectedBranchId }) 
               </div>
             </div>
 
-            {/* GST Sub-Tab Filters (B2B, B2C, HSN) */}
+            {/* GST Sub-Tab Filters (GSTR-1, GSTR-2B, GSTR-3B) */}
             {activeConfig.id === 'gst' && (
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <button 
-                  className={`rep-date-chip ${gstSubTab === 'all' ? 'active' : ''}`}
-                  onClick={() => handleGstTabChange('all')}
-                >
-                  All GST Invoices
-                </button>
-                <button 
-                  className={`rep-date-chip ${gstSubTab === 'b2b' ? 'active' : ''}`}
-                  onClick={() => handleGstTabChange('b2b')}
-                >
-                  B2B
-                </button>
-                <button 
-                  className={`rep-date-chip ${gstSubTab === 'b2c' ? 'active' : ''}`}
-                  onClick={() => handleGstTabChange('b2c')}
-                >
-                  B2C
-                </button>
-                <button 
-                  className={`rep-date-chip ${gstSubTab === 'hsn' ? 'active' : ''}`}
-                  onClick={() => handleGstTabChange('hsn')}
-                >
-                  HSN Summary
-                </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', marginTop: '6px' }}>
+                {/* Primary Return Mode Tabs */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                  <div className="gst-return-switcher">
+                    <button 
+                      type="button"
+                      className={`gst-return-btn ${gstReturnMode === 'gstr1' ? 'active' : ''}`}
+                      onClick={() => handleGstReturnModeChange('gstr1')}
+                    >
+                      <span>GSTR-1</span>
+                      <small style={{ fontSize: '10.5px', opacity: 0.8 }}>(Sales / Outward)</small>
+                    </button>
+                    <button 
+                      type="button"
+                      className={`gst-return-btn ${gstReturnMode === 'gstr2' ? 'active' : ''}`}
+                      onClick={() => handleGstReturnModeChange('gstr2')}
+                    >
+                      <span>GSTR-2B</span>
+                      <small style={{ fontSize: '10.5px', opacity: 0.8 }}>(Inward Purchases &amp; ITC)</small>
+                    </button>
+                    <button 
+                      type="button"
+                      className={`gst-return-btn ${gstReturnMode === 'gstr3b' ? 'active' : ''}`}
+                      onClick={() => handleGstReturnModeChange('gstr3b')}
+                    >
+                      <span>GSTR-3B</span>
+                      <small style={{ fontSize: '10.5px', opacity: 0.8 }}>(Monthly Summary Return)</small>
+                    </button>
+                  </div>
+
+                  {/* Company GSTIN & Compliance pill */}
+                  <div className="gst-info-pill">
+                    <span>GSTIN: <strong className="font-mono">{reportData?.compGstin || '32AABCS1429B1Z0'}</strong></span>
+                    <span style={{ color: '#94a3b8' }}>•</span>
+                    <span>State: <strong>{reportData?.compStateCode || '32'} (Kerala)</strong></span>
+                  </div>
+                </div>
+
+                {/* Contextual Sub-Filters for Selected Return */}
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {gstReturnMode === 'gstr1' && (
+                    <>
+                      <button 
+                        className={`rep-date-chip ${gstSubTab === 'all' ? 'active' : ''}`}
+                        onClick={() => handleGstTabChange('all')}
+                      >
+                        All Sales Invoices
+                      </button>
+                      <button 
+                        className={`rep-date-chip ${gstSubTab === 'b2b' ? 'active' : ''}`}
+                        onClick={() => handleGstTabChange('b2b')}
+                      >
+                        B2B (Registered)
+                      </button>
+                      <button 
+                        className={`rep-date-chip ${gstSubTab === 'b2c' ? 'active' : ''}`}
+                        onClick={() => handleGstTabChange('b2c')}
+                      >
+                        B2C (Retail)
+                      </button>
+                      <button 
+                        className={`rep-date-chip ${gstSubTab === 'hsn' ? 'active' : ''}`}
+                        onClick={() => handleGstTabChange('hsn')}
+                      >
+                        Table 12: HSN Summary
+                      </button>
+                      <button 
+                        className={`rep-date-chip ${gstSubTab === 'docs' ? 'active' : ''}`}
+                        onClick={() => handleGstTabChange('docs')}
+                      >
+                        Table 13: Docs Issued
+                      </button>
+                    </>
+                  )}
+
+                  {gstReturnMode === 'gstr2' && (
+                    <>
+                      <button 
+                        className={`rep-date-chip ${gstSubTab === 'all' ? 'active' : ''}`}
+                        onClick={() => handleGstTabChange('all')}
+                      >
+                        All Inward Purchases
+                      </button>
+                      <button 
+                        className={`rep-date-chip ${gstSubTab === 'b2b' ? 'active' : ''}`}
+                        onClick={() => handleGstTabChange('b2b')}
+                      >
+                        Eligible ITC (B2B Purchases)
+                      </button>
+                      <button 
+                        className={`rep-date-chip ${gstSubTab === 'vendor' ? 'active' : ''}`}
+                        onClick={() => handleGstTabChange('vendor')}
+                      >
+                        Vendor ITC Summary
+                      </button>
+                    </>
+                  )}
+
+                  {gstReturnMode === 'gstr3b' && (
+                    <>
+                      <button 
+                        className={`rep-date-chip ${gstSubTab === 'all' ? 'active' : ''}`}
+                        onClick={() => handleGstTabChange('all')}
+                      >
+                        Complete GSTR-3B Return
+                      </button>
+                      <button 
+                        className={`rep-date-chip ${gstSubTab === '3.1' ? 'active' : ''}`}
+                        onClick={() => handleGstTabChange('3.1')}
+                      >
+                        Table 3.1 (Outward Supplies)
+                      </button>
+                      <button 
+                        className={`rep-date-chip ${gstSubTab === '4' ? 'active' : ''}`}
+                        onClick={() => handleGstTabChange('4')}
+                      >
+                        Table 4 (Eligible ITC)
+                      </button>
+                      <button 
+                        className={`rep-date-chip ${gstSubTab === '6.1' ? 'active' : ''}`}
+                        onClick={() => handleGstTabChange('6.1')}
+                      >
+                        Table 6.1 (Tax Payment in Cash)
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             )}
 
@@ -1098,32 +1425,104 @@ export const ReportsHub = ({ initialTab = 'payments', user, selectedBranchId }) 
               </>
             )}
 
-            {activeConfig.id === 'gst' && reportData.summary.totalTaxable !== undefined && (
+            {activeConfig.id === 'gst' && (
               <>
-                <div className="ribbon-metric-item">
-                  <span className="ribbon-label">Total Turnover</span>
-                  <strong className="ribbon-val text-blue">{formatCurrency(reportData.summary.totalInvoiceValue)}</strong>
-                </div>
-                <div className="ribbon-metric-item">
-                  <span className="ribbon-label">Taxable Value</span>
-                  <strong className="ribbon-val text-emerald">{formatCurrency(reportData.summary.totalTaxable)}</strong>
-                </div>
-                <div className="ribbon-metric-item">
-                  <span className="ribbon-label">CGST Amount</span>
-                  <strong className="ribbon-val text-emerald">{formatCurrency(reportData.summary.totalCgst)}</strong>
-                </div>
-                <div className="ribbon-metric-item">
-                  <span className="ribbon-label">SGST Amount</span>
-                  <strong className="ribbon-val text-emerald">{formatCurrency(reportData.summary.totalSgst)}</strong>
-                </div>
-                <div className="ribbon-metric-item">
-                  <span className="ribbon-label">Total GST Tax</span>
-                  <strong className="ribbon-val text-purple">{formatCurrency(reportData.summary.totalTax)}</strong>
-                </div>
-                <div className="ribbon-metric-item">
-                  <span className="ribbon-label">B2B / B2C Invoices</span>
-                  <strong className="ribbon-val">{reportData.summary.b2bCount} B2B / {reportData.summary.b2cCount} B2C</strong>
-                </div>
+                {gstReturnMode === 'gstr1' && (
+                  <>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">Total Outward Turnover</span>
+                      <strong className="ribbon-val text-blue">{formatCurrency(reportData.gstr1?.summary?.totalInvoiceValue || reportData.summary?.totalInvoiceValue)}</strong>
+                    </div>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">Taxable Sales Value</span>
+                      <strong className="ribbon-val text-emerald">{formatCurrency(reportData.gstr1?.summary?.totalTaxable || reportData.summary?.totalTaxable)}</strong>
+                    </div>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">CGST Output</span>
+                      <strong className="ribbon-val text-emerald">{formatCurrency(reportData.gstr1?.summary?.totalCgst || reportData.summary?.totalCgst)}</strong>
+                    </div>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">SGST Output</span>
+                      <strong className="ribbon-val text-emerald">{formatCurrency(reportData.gstr1?.summary?.totalSgst || reportData.summary?.totalSgst)}</strong>
+                    </div>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">IGST Output</span>
+                      <strong className="ribbon-val text-blue">{formatCurrency(reportData.gstr1?.summary?.totalIgst || reportData.summary?.totalIgst)}</strong>
+                    </div>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">Total Output Tax</span>
+                      <strong className="ribbon-val text-purple">{formatCurrency(reportData.gstr1?.summary?.totalTax || reportData.summary?.totalTax)}</strong>
+                    </div>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">B2B / B2C Invoices</span>
+                      <strong className="ribbon-val">{reportData.gstr1?.summary?.b2bCount || 0} B2B / {reportData.gstr1?.summary?.b2cCount || 0} B2C</strong>
+                    </div>
+                  </>
+                )}
+
+                {gstReturnMode === 'gstr2' && (
+                  <>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">Total Inward Purchases</span>
+                      <strong className="ribbon-val text-blue">{formatCurrency(reportData.gstr2?.summary?.totalPurchaseValue || 0)}</strong>
+                    </div>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">Inward Taxable Value</span>
+                      <strong className="ribbon-val text-emerald">{formatCurrency(reportData.gstr2?.summary?.totalTaxable || 0)}</strong>
+                    </div>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">Input CGST Credit</span>
+                      <strong className="ribbon-val text-emerald">{formatCurrency(reportData.gstr2?.summary?.totalCgst || 0)}</strong>
+                    </div>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">Input SGST Credit</span>
+                      <strong className="ribbon-val text-emerald">{formatCurrency(reportData.gstr2?.summary?.totalSgst || 0)}</strong>
+                    </div>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">Input IGST Credit</span>
+                      <strong className="ribbon-val text-blue">{formatCurrency(reportData.gstr2?.summary?.totalIgst || 0)}</strong>
+                    </div>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">Total Eligible ITC</span>
+                      <strong className="ribbon-val text-purple">{formatCurrency(reportData.gstr2?.summary?.eligibleItc || 0)}</strong>
+                    </div>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">Supplier Bills / Vendors</span>
+                      <strong className="ribbon-val">{reportData.gstr2?.summary?.totalBills || 0} bills / {reportData.gstr2?.summary?.vendorCount || 0} vendors</strong>
+                    </div>
+                  </>
+                )}
+
+                {gstReturnMode === 'gstr3b' && (
+                  <>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">Output Tax Liability</span>
+                      <strong className="ribbon-val text-purple">{formatCurrency(reportData.gstr3b?.summary?.totalOutputTax || 0)}</strong>
+                    </div>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">Eligible Input Credit (ITC)</span>
+                      <strong className="ribbon-val text-emerald">{formatCurrency(reportData.gstr3b?.summary?.totalInputItc || 0)}</strong>
+                    </div>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">ITC Utilized (Rule 88A)</span>
+                      <strong className="ribbon-val text-blue">{formatCurrency(reportData.gstr3b?.summary?.totalItcUtilized || 0)}</strong>
+                    </div>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">Net Tax Payable (Cash)</span>
+                      <strong className={`ribbon-val ${(reportData.gstr3b?.summary?.totalCashPayable || 0) > 0 ? 'text-red' : 'text-emerald'}`}>
+                        {formatCurrency(reportData.gstr3b?.summary?.totalCashPayable || 0)}
+                      </strong>
+                    </div>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">Excess ITC Balance C/F</span>
+                      <strong className="ribbon-val text-emerald">{formatCurrency(reportData.gstr3b?.summary?.totalExcessItcBalance || 0)}</strong>
+                    </div>
+                    <div className="ribbon-metric-item">
+                      <span className="ribbon-label">Statutory Due Date</span>
+                      <strong className="ribbon-val text-orange">{reportData.gstr3b?.summary?.filingDueDate || '20th of month'}</strong>
+                    </div>
+                  </>
+                )}
               </>
             )}
 
@@ -1158,7 +1557,18 @@ export const ReportsHub = ({ initialTab = 'payments', user, selectedBranchId }) 
               <span>Compiling live {activeConfig.label} data...</span>
             </div>
           ) : !reportData || (activeConfig.id === 'gst' 
-              ? (gstSubTab === 'hsn' ? (!reportData.hsnSummary || reportData.hsnSummary.length === 0) : (!reportData.data || reportData.data.length === 0))
+              ? (gstReturnMode === 'gstr3b'
+                  ? !reportData.gstr3b
+                  : (gstReturnMode === 'gstr2'
+                      ? (gstSubTab === 'vendor' ? (!reportData.gstr2?.vendorSummary || reportData.gstr2.vendorSummary.length === 0) : (!reportData.gstr2?.data || reportData.gstr2.data.length === 0))
+                      : (gstSubTab === 'hsn' 
+                          ? (!reportData.gstr1?.hsnSummary || reportData.gstr1.hsnSummary.length === 0)
+                          : (gstSubTab === 'docs' 
+                              ? !reportData.gstr1?.docSummary 
+                              : (!reportData.gstr1?.data || reportData.gstr1.data.length === 0))
+                        )
+                    )
+                )
               : (!reportData.data || reportData.data.length === 0)) ? (
             <div className="rep-empty-state">
               <AlertCirclePlaceholder icon={activeConfig.icon} />
@@ -1614,89 +2024,322 @@ export const ReportsHub = ({ initialTab = 'payments', user, selectedBranchId }) 
                   </>
                 )}
 
-                {/* 12. GST REPORT (GSTR-1 Sales & Tax Register) */}
+                {/* 12. GST REPORT (GSTR-1, GSTR-2B, and GSTR-3B Statutory Returns) */}
                 {activeConfig.id === 'gst' && (
                   <>
-                    {gstSubTab === 'hsn' ? (
+                    {/* MODE 1: GSTR-1 (OUTWARD SALES) */}
+                    {gstReturnMode === 'gstr1' && (
                       <>
-                        <thead>
-                          <tr>
-                            <th>HSN / SAC Code</th>
-                            <th>Description of Commodity</th>
-                            <th>UQC Unit</th>
-                            <th>Total Qty Sold</th>
-                            <th>Taxable Value</th>
-                            <th>CGST Amount</th>
-                            <th>SGST Amount</th>
-                            <th>IGST Amount</th>
-                            <th>Total Tax Collected</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(reportData.hsnSummary || []).map((h, i) => (
-                            <tr key={i}>
-                              <td className="font-mono font-bold text-primary">{h.hsn_code}</td>
-                              <td>{h.description}</td>
-                              <td><span className="cat-pill">{h.uqc}</span></td>
-                              <td className="text-right">{parseFloat(h.total_qty).toLocaleString()}</td>
-                              <td className="text-right font-semibold">{formatCurrency(h.taxable_value)}</td>
-                              <td className="text-right text-emerald">{formatCurrency(h.cgst_amount)}</td>
-                              <td className="text-right text-emerald">{formatCurrency(h.sgst_amount)}</td>
-                              <td className="text-right text-blue">{formatCurrency(h.igst_amount)}</td>
-                              <td className="text-right font-bold text-primary">
-                                {formatCurrency(h.cgst_amount + h.sgst_amount + h.igst_amount)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
+                        {gstSubTab === 'hsn' ? (
+                          <>
+                            <thead>
+                              <tr>
+                                <th>HSN / SAC Code</th>
+                                <th>Description of Commodity</th>
+                                <th>UQC Unit</th>
+                                <th>Total Qty Sold</th>
+                                <th>Taxable Value</th>
+                                <th>CGST Amount</th>
+                                <th>SGST Amount</th>
+                                <th>IGST Amount</th>
+                                <th>Total Tax Collected</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(reportData.gstr1?.hsnSummary || reportData.hsnSummary || []).map((h, i) => (
+                                <tr key={i}>
+                                  <td className="font-mono font-bold text-primary">{h.hsn_code}</td>
+                                  <td>{h.description}</td>
+                                  <td><span className="cat-pill">{h.uqc}</span></td>
+                                  <td className="text-right">{parseFloat(h.total_qty).toLocaleString()}</td>
+                                  <td className="text-right font-semibold">{formatCurrency(h.taxable_value)}</td>
+                                  <td className="text-right text-emerald">{formatCurrency(h.cgst_amount)}</td>
+                                  <td className="text-right text-emerald">{formatCurrency(h.sgst_amount)}</td>
+                                  <td className="text-right text-blue">{formatCurrency(h.igst_amount)}</td>
+                                  <td className="text-right font-bold text-primary">
+                                    {formatCurrency((h.cgst_amount || 0) + (h.sgst_amount || 0) + (h.igst_amount || 0))}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </>
+                        ) : gstSubTab === 'docs' ? (
+                          <>
+                            <thead>
+                              <tr>
+                                <th>Document Serial No.</th>
+                                <th>Nature of Document</th>
+                                <th>From Serial #</th>
+                                <th>To Serial #</th>
+                                <th>Total Number Issued</th>
+                                <th>Cancelled</th>
+                                <th>Net Issued Documents</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {reportData.gstr1?.docSummary ? (
+                                <tr>
+                                  <td className="font-mono font-bold text-primary">1</td>
+                                  <td className="font-semibold">{reportData.gstr1.docSummary.natureOfDoc}</td>
+                                  <td className="font-mono">{reportData.gstr1.docSummary.fromSerial}</td>
+                                  <td className="font-mono">{reportData.gstr1.docSummary.toSerial}</td>
+                                  <td className="text-right font-bold">{reportData.gstr1.docSummary.totalNumber}</td>
+                                  <td className="text-right text-muted">{reportData.gstr1.docSummary.cancelledNumber}</td>
+                                  <td className="text-right font-bold text-emerald">{reportData.gstr1.docSummary.netIssued}</td>
+                                </tr>
+                              ) : (
+                                <tr>
+                                  <td colSpan="7" style={{ textAlign: 'center', padding: '24px' }}>No documents summary available</td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </>
+                        ) : (
+                          <>
+                            <thead>
+                              <tr>
+                                <th>Invoice #</th>
+                                <th>Date</th>
+                                <th>Customer &amp; Trade Name</th>
+                                <th>Customer GSTIN</th>
+                                <th>Type</th>
+                                <th>State (POS)</th>
+                                <th>Taxable Value</th>
+                                <th>CGST (₹)</th>
+                                <th>SGST (₹)</th>
+                                <th>IGST (₹)</th>
+                                <th>Total Invoice Value</th>
+                                <th>Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {((gstSubTab === 'b2b' ? reportData.gstr1?.b2b : (gstSubTab === 'b2c' ? reportData.gstr1?.b2c : (reportData.gstr1?.data || reportData.data))) || []).map((r, i) => (
+                                <tr key={i}>
+                                  <td className="font-mono font-bold text-primary">{r.invoice_number}</td>
+                                  <td>{r.invoice_date}</td>
+                                  <td>
+                                    <strong>{r.customer_name}</strong>
+                                    {r.customer_phone && <small className="cell-subtext">{r.customer_phone}</small>}
+                                  </td>
+                                  <td className="font-mono">{r.customer_gstin || <span className="text-muted">Unregistered</span>}</td>
+                                  <td>
+                                    <span className={`status-pill ${r.transaction_type === 'B2B' ? 'status-info' : 'status-warning'}`}>
+                                      {r.transaction_type}
+                                    </span>
+                                  </td>
+                                  <td>State ({r.state_code})</td>
+                                  <td className="text-right font-semibold">{formatCurrency(r.taxable_value)}</td>
+                                  <td className="text-right text-emerald">{formatCurrency(r.cgst_amount)}</td>
+                                  <td className="text-right text-emerald">{formatCurrency(r.sgst_amount)}</td>
+                                  <td className="text-right text-blue">{formatCurrency(r.igst_amount)}</td>
+                                  <td className="text-right font-bold text-primary">{formatCurrency(r.grand_total)}</td>
+                                  <td>
+                                    <span className={`status-pill ${r.payment_status === 'Paid' ? 'status-success' : 'status-warning'}`}>
+                                      {r.payment_status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </>
+                        )}
                       </>
-                    ) : (
+                    )}
+
+                    {/* MODE 2: GSTR-2B (INWARD PURCHASES & ITC) */}
+                    {gstReturnMode === 'gstr2' && (
                       <>
-                        <thead>
-                          <tr>
-                            <th>Invoice #</th>
-                            <th>Date</th>
-                            <th>Customer &amp; Trade Name</th>
-                            <th>Customer GSTIN</th>
-                            <th>Type</th>
-                            <th>State</th>
-                            <th>Taxable Value</th>
-                            <th>CGST (₹)</th>
-                            <th>SGST (₹)</th>
-                            <th>IGST (₹)</th>
-                            <th>Total Invoice Value</th>
-                            <th>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(reportData.data || []).map((r, i) => (
-                            <tr key={i}>
-                              <td className="font-mono font-bold text-primary">{r.invoice_number}</td>
-                              <td>{r.invoice_date}</td>
-                              <td>
-                                <strong>{r.customer_name}</strong>
-                                {r.customer_phone && <small className="cell-subtext">{r.customer_phone}</small>}
-                              </td>
-                              <td className="font-mono">{r.customer_gstin || <span className="text-muted">Unregistered</span>}</td>
-                              <td>
-                                <span className={`status-pill ${r.transaction_type === 'B2B' ? 'status-info' : 'status-warning'}`}>
-                                  {r.transaction_type}
-                                </span>
-                              </td>
-                              <td>State ({r.state_code})</td>
-                              <td className="text-right font-semibold">{formatCurrency(r.taxable_value)}</td>
-                              <td className="text-right text-emerald">{formatCurrency(r.cgst_amount)}</td>
-                              <td className="text-right text-emerald">{formatCurrency(r.sgst_amount)}</td>
-                              <td className="text-right text-blue">{formatCurrency(r.igst_amount)}</td>
-                              <td className="text-right font-bold text-primary">{formatCurrency(r.grand_total)}</td>
-                              <td>
-                                <span className={`status-pill ${r.payment_status === 'Paid' ? 'status-success' : 'status-warning'}`}>
-                                  {r.payment_status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
+                        {gstSubTab === 'vendor' ? (
+                          <>
+                            <thead>
+                              <tr>
+                                <th>Vendor / Supplier Company</th>
+                                <th>Vendor GSTIN</th>
+                                <th>Depot / Place</th>
+                                <th>Bills Count</th>
+                                <th>Total Purchases</th>
+                                <th>Taxable Inward Value</th>
+                                <th>Input CGST (₹)</th>
+                                <th>Input SGST (₹)</th>
+                                <th>Input IGST (₹)</th>
+                                <th>Total Eligible ITC</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(reportData.gstr2?.vendorSummary || []).map((v, i) => (
+                                <tr key={i}>
+                                  <td><strong>{v.vendor_name}</strong></td>
+                                  <td className="font-mono">{v.vendor_gstin}</td>
+                                  <td>{v.vendor_place || 'Depot'}</td>
+                                  <td className="text-right font-semibold">{v.po_count}</td>
+                                  <td className="text-right font-bold">{formatCurrency(v.total_purchases)}</td>
+                                  <td className="text-right">{formatCurrency(v.taxable_value)}</td>
+                                  <td className="text-right text-emerald">{formatCurrency(v.cgst_amount)}</td>
+                                  <td className="text-right text-emerald">{formatCurrency(v.sgst_amount)}</td>
+                                  <td className="text-right text-blue">{formatCurrency(v.igst_amount)}</td>
+                                  <td className="text-right font-bold text-emerald">{formatCurrency(v.total_itc)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </>
+                        ) : (
+                          <>
+                            <thead>
+                              <tr>
+                                <th>PO / Ref Bill #</th>
+                                <th>Bill Date</th>
+                                <th>Vendor / Supplier</th>
+                                <th>Vendor GSTIN</th>
+                                <th>Place of Supply</th>
+                                <th>Supply Type</th>
+                                <th>Taxable Value</th>
+                                <th>Input CGST (₹)</th>
+                                <th>Input SGST (₹)</th>
+                                <th>Input IGST (₹)</th>
+                                <th>Total Bill Amount</th>
+                                <th>ITC Eligibility</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {((gstSubTab === 'b2b' ? reportData.gstr2?.b2b : reportData.gstr2?.data) || []).map((po, i) => (
+                                <tr key={i}>
+                                  <td className="font-mono font-bold text-primary">{po.invoice_number}</td>
+                                  <td>{po.invoice_date}</td>
+                                  <td><strong>{po.vendor_name}</strong></td>
+                                  <td className="font-mono">{po.vendor_gstin}</td>
+                                  <td>{po.place_of_supply}</td>
+                                  <td>
+                                    <span className="cat-pill">{po.supply_type}</span>
+                                  </td>
+                                  <td className="text-right font-semibold">{formatCurrency(po.taxable_value)}</td>
+                                  <td className="text-right text-emerald">{formatCurrency(po.cgst_amount)}</td>
+                                  <td className="text-right text-emerald">{formatCurrency(po.sgst_amount)}</td>
+                                  <td className="text-right text-blue">{formatCurrency(po.igst_amount)}</td>
+                                  <td className="text-right font-bold text-primary">{formatCurrency(po.grand_total)}</td>
+                                  <td>
+                                    <span className={`status-pill ${po.itc_status === 'Eligible' ? 'status-success' : 'status-warning'}`}>
+                                      {po.itc_status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </>
+                        )}
+                      </>
+                    )}
+
+                    {/* MODE 3: GSTR-3B (MONTHLY SUMMARY RETURN) */}
+                    {gstReturnMode === 'gstr3b' && (
+                      <>
+                        {/* Table 3.1: Outward Supplies */}
+                        {(gstSubTab === 'all' || gstSubTab === '3.1') && (
+                          <>
+                            <thead>
+                              <tr style={{ background: '#0f172a', color: '#ffffff' }}>
+                                <th colSpan="6" style={{ background: '#1e293b', color: '#ffffff', fontSize: '13px', padding: '12px 16px' }}>
+                                  3.1 Details of Outward Supplies and Inward Supplies Liable to Reverse Charge
+                                </th>
+                              </tr>
+                              <tr>
+                                <th>Nature of Supplies</th>
+                                <th className="text-right">Total Taxable Value (₹)</th>
+                                <th className="text-right">Integrated Tax / IGST (₹)</th>
+                                <th className="text-right">Central Tax / CGST (₹)</th>
+                                <th className="text-right">State / UT Tax / SGST (₹)</th>
+                                <th className="text-right">Cess (₹)</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(reportData.gstr3b?.table31?.rows || []).map((row, i) => (
+                                <tr key={`t31-${i}`} style={i === 0 ? { fontWeight: 600, background: '#f8fafc' } : {}}>
+                                  <td>{row.nature}</td>
+                                  <td className="text-right font-mono">{formatCurrency(row.taxable_value)}</td>
+                                  <td className="text-right font-mono text-blue">{formatCurrency(row.igst)}</td>
+                                  <td className="text-right font-mono text-emerald">{formatCurrency(row.cgst)}</td>
+                                  <td className="text-right font-mono text-emerald">{formatCurrency(row.sgst)}</td>
+                                  <td className="text-right font-mono text-muted">{formatCurrency(row.cess)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </>
+                        )}
+
+                        {/* Table 4: Eligible Input Tax Credit */}
+                        {(gstSubTab === 'all' || gstSubTab === '4') && (
+                          <>
+                            <thead>
+                              <tr style={{ background: '#064e3b', color: '#ffffff' }}>
+                                <th colSpan="6" style={{ background: '#064e3b', color: '#ffffff', fontSize: '13px', padding: '12px 16px' }}>
+                                  4. Eligible Input Tax Credit (ITC Availed)
+                                </th>
+                              </tr>
+                              <tr>
+                                <th>Details of Input Tax Credit (ITC)</th>
+                                <th className="text-right">Integrated Tax / IGST (₹)</th>
+                                <th className="text-right">Central Tax / CGST (₹)</th>
+                                <th className="text-right">State / UT Tax / SGST (₹)</th>
+                                <th className="text-right">Cess (₹)</th>
+                                <th>Classification</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(reportData.gstr3b?.table4?.rows || []).map((row, i) => (
+                                <tr key={`t4-${i}`} style={row.is_net ? { fontWeight: 700, background: '#ecfdf5' } : {}}>
+                                  <td>{row.nature}</td>
+                                  <td className="text-right font-mono text-blue">{formatCurrency(row.igst)}</td>
+                                  <td className="text-right font-mono text-emerald">{formatCurrency(row.cgst)}</td>
+                                  <td className="text-right font-mono text-emerald">{formatCurrency(row.sgst)}</td>
+                                  <td className="text-right font-mono text-muted">{formatCurrency(row.cess)}</td>
+                                  <td>
+                                    <span className={`status-pill ${row.is_net ? 'status-success' : 'status-info'}`}>
+                                      {row.is_net ? 'Net Claimable' : 'Inward Sourced'}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </>
+                        )}
+
+                        {/* Table 6.1: Payment of Tax (Net Tax Payable in Cash) */}
+                        {(gstSubTab === 'all' || gstSubTab === '6.1') && (
+                          <>
+                            <thead>
+                              <tr style={{ background: '#581c87', color: '#ffffff' }}>
+                                <th colSpan="6" style={{ background: '#581c87', color: '#ffffff', fontSize: '13px', padding: '12px 16px' }}>
+                                  6.1 Payment of Tax (Net Tax Payable in Cash &amp; Credit Set-off under Rule 88A)
+                                </th>
+                              </tr>
+                              <tr>
+                                <th>Description / Head</th>
+                                <th className="text-right">Total Tax Payable (Output)</th>
+                                <th className="text-right">Paid Through ITC (Input)</th>
+                                <th className="text-right">Net Tax Payable in Cash</th>
+                                <th className="text-right">Balance ITC Carried Forward</th>
+                                <th>Settlement Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(reportData.gstr3b?.table61?.rows || []).map((row, i) => (
+                                <tr key={`t61-${i}`} style={row.is_total ? { fontWeight: 800, background: '#f5f3ff', borderTop: '2px solid #cbd5e1' } : {}}>
+                                  <td><strong>{row.tax_type}</strong></td>
+                                  <td className="text-right font-mono">{formatCurrency(row.total_tax_payable)}</td>
+                                  <td className="text-right font-mono text-blue">{formatCurrency(row.paid_through_itc)}</td>
+                                  <td className={`text-right font-mono ${row.tax_payable_in_cash > 0 ? 'text-red font-bold' : 'text-emerald'}`}>
+                                    {formatCurrency(row.tax_payable_in_cash)}
+                                  </td>
+                                  <td className="text-right font-mono text-emerald font-semibold">{formatCurrency(row.balance_itc_cf)}</td>
+                                  <td>
+                                    <span className={`status-pill ${row.tax_payable_in_cash > 0 ? 'status-warning' : 'status-success'}`}>
+                                      {row.tax_payable_in_cash > 0 ? 'Cash Challan Needed' : 'ITC Set-off Complete'}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </>
+                        )}
                       </>
                     )}
                   </>

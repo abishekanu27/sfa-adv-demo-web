@@ -16,7 +16,9 @@ import {
   Eye,
   DollarSign,
   TrendingUp,
-  Clock
+  Clock,
+  Sparkles,
+  Gift
 } from 'lucide-react';
 import {
   fetchInvoicesApi,
@@ -26,7 +28,8 @@ import {
   fetchCustomersApi,
   fetchProductsApi,
   fetchSalesExecutivesApi,
-  fetchCompanySettings
+  fetchCompanySettings,
+  evaluateSchemesApi
 } from '../../services/api';
 import { InvoiceTemplateSheet, formatInvoiceDateTime, formatInvoiceDateOnly } from '../../components/InvoiceTemplateSheet';
 import './InvoiceManagement.css';
@@ -67,6 +70,7 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings, sel
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [viewingInvoice, setViewingInvoice] = useState(null);
   const [toast, setToast] = useState(null);
+  const [qualifiedOffers, setQualifiedOffers] = useState(null);
 
   // New Invoice Form
   const [formData, setFormData] = useState({
@@ -275,6 +279,83 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings, sel
       rate: 0,
       gst_rate: isNonGst ? 0 : 18
     });
+  };
+
+  // Evaluate promotional schemes automatically as invoice items / total changes
+  useEffect(() => {
+    if (!showCreateModal || formData.items.length === 0) {
+      setQualifiedOffers(null);
+      return;
+    }
+
+    const currentSubtotal = formData.items.reduce((acc, itm) => acc + (itm.total != null ? itm.total : itm.qty * itm.rate), 0);
+    evaluateSchemesApi({
+      items: formData.items,
+      total_amount: currentSubtotal,
+      branch_id: selectedBranchId
+    }).then(res => {
+      if (res && res.has_offers) {
+        setQualifiedOffers(res);
+      } else {
+        setQualifiedOffers(null);
+      }
+    }).catch(err => {
+      console.warn('Scheme eval notice:', err);
+    });
+  }, [formData.items, showCreateModal, selectedBranchId]);
+
+  const handleApplySchemeRewards = () => {
+    if (!qualifiedOffers || !qualifiedOffers.free_reward_items) return;
+
+    const existingNames = formData.items.map(it => it.product_name);
+    const itemsToAdd = (qualifiedOffers.free_reward_items || []).filter(r => !existingNames.includes(`${r.product_name} [SCHEME FREE]`));
+
+    let updatedItems = [...formData.items];
+    if (itemsToAdd.length > 0) {
+      updatedItems = [
+        ...updatedItems,
+        ...itemsToAdd.map(it => ({
+          product_id: it.product_id || '',
+          product_name: `${it.product_name} [SCHEME FREE]`,
+          sku: it.sku || 'PROMO',
+          hsn_code: '',
+          package_type: it.package_type || 'Unit',
+          unit: it.unit || 'Pcs',
+          qty: it.qty,
+          mrp: 0,
+          rate: 0,
+          gst_rate: 0,
+          taxable_amount: 0,
+          tax_amount: 0,
+          total: 0,
+          is_scheme_free: true
+        }))
+      ];
+    }
+
+    // Apply Scheme discount if present
+    const schemeDisc = qualifiedOffers.discount_amount || 0;
+    const currentDisc = parseFloat(formData.discount_amount) || 0;
+    const newDisc = Math.round((currentDisc + schemeDisc) * 100) / 100;
+
+    // Record scheme note
+    const schemeDescriptions = (qualifiedOffers.matched_schemes || []).map(s => `${s.scheme_code} (${s.name})`).join(', ');
+    const updatedNotes = formData.notes 
+      ? `${formData.notes} | Applied Schemes: ${schemeDescriptions}` 
+      : `Applied Schemes: ${schemeDescriptions}`;
+
+    const newSubtotal = updatedItems.reduce((acc, itm) => acc + (itm.total != null ? itm.total : itm.qty * itm.rate), 0);
+    const grand = Math.max(0, Math.round(newSubtotal - newDisc));
+
+    setFormData(prev => ({
+      ...prev,
+      items: updatedItems,
+      discount_amount: newDisc,
+      notes: updatedNotes,
+      paid_amount: grand
+    }));
+
+    showNotification(`Applied scheme rewards: ${itemsToAdd.length} free item(s)${schemeDisc > 0 ? `, -₹${schemeDisc.toFixed(2)} discount` : ''}!`);
   };
 
   // Remove Item
@@ -1010,6 +1091,54 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings, sel
                       </button>
                     </div>
                   </div>
+
+                  {/* Qualified Trade Offers Banner */}
+                  {qualifiedOffers && qualifiedOffers.matched_schemes?.length > 0 && (
+                    <div style={{
+                      background: '#f0fdf4',
+                      border: '1px solid #86efac',
+                      borderRadius: '10px',
+                      padding: '12px 16px',
+                      marginTop: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Sparkles size={20} color="#16a34a" />
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: '700', color: '#15803d' }}>
+                            🎉 Trade Offer Qualified: {qualifiedOffers.matched_schemes[0].name}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#166534' }}>
+                            {qualifiedOffers.matched_schemes[0].reward_summary}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleApplySchemeRewards}
+                        style={{
+                          background: '#16a34a',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '6px',
+                          padding: '7px 14px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 4px rgba(22, 163, 74, 0.25)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px'
+                        }}
+                      >
+                        <Gift size={14} />
+                        <span>+ Add Free Reward Item(s)</span>
+                      </button>
+                    </div>
+                  )}
 
                   {/* Items List Table */}
                   {formData.items.length > 0 && (

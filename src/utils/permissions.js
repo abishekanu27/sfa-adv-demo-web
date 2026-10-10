@@ -141,6 +141,7 @@ export const getFirstAccessibleMenu = (user) => {
     'sales-live-track', 'sales-returns', 'sales-expenses',
     'master-salesman', 'master-vehicles', 'master-routes', 'master-mappings'
   ], 'sales')) return 'sales';
+  if (hasMenuPermission(user, ['schemes-list', 'schemes-simulator'], 'schemes')) return 'schemes';
   if (hasSubmenuPermission(user, 'invoices-list', 'invoices') || hasMenuPermission(user, ['invoices-list'], 'invoices')) return 'invoices-list';
   if (hasSubmenuPermission(user, 'reports')) return 'reports';
   if (hasMenuPermission(user, ['users-list', 'roles-list'], 'users')) return 'users';

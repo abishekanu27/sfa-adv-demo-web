@@ -1364,6 +1364,85 @@ export const deleteRouteApi = async (routeId) => {
   return data;
 };
 
+// ==========================================
+// SCHEMES & PROMOTIONAL OFFERS APIS
+// ==========================================
+
+export const fetchSchemesApi = async (params = {}) => {
+  const query = new URLSearchParams();
+  if (params.search) query.append('search', params.search);
+  if (params.type && params.type !== 'ALL') query.append('type', params.type);
+  if (params.status && params.status !== 'all') query.append('status', params.status);
+  if (params.branch_id && params.branch_id !== 'all') query.append('branch_id', params.branch_id);
+
+  const url = `${API_BASE}/schemes${query.toString() ? `?${query.toString()}` : ''}`;
+  const res = await fetch(url, { headers: getAuthHeaders() });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message || 'Failed to fetch schemes');
+  return json.data || [];
+};
+
+export const fetchSchemeByIdApi = async (id) => {
+  const res = await fetch(`${API_BASE}/schemes/${id}`, { headers: getAuthHeaders() });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message || 'Failed to fetch scheme');
+  return json.data;
+};
+
+export const createSchemeApi = async (data) => {
+  const res = await fetch(`${API_BASE}/schemes`, {
+    method: 'POST',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(data)
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message || 'Failed to create scheme');
+  return json.data;
+};
+
+export const updateSchemeApi = async (id, data) => {
+  const res = await fetch(`${API_BASE}/schemes/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(data)
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message || 'Failed to update scheme');
+  return json.data;
+};
+
+export const toggleSchemeStatusApi = async (id) => {
+  const res = await fetch(`${API_BASE}/schemes/${id}/toggle-status`, {
+    method: 'PATCH',
+    headers: getAuthHeaders()
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message || 'Failed to toggle scheme status');
+  return json.data;
+};
+
+export const deleteSchemeApi = async (id) => {
+  const res = await fetch(`${API_BASE}/schemes/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message || 'Failed to delete scheme');
+  return json;
+};
+
+export const evaluateSchemesApi = async (cartPayload) => {
+  const res = await fetch(`${API_BASE}/schemes/evaluate`, {
+    method: 'POST',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(cartPayload)
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message || 'Failed to evaluate offers');
+  return json;
+};
+
+
 
 
 

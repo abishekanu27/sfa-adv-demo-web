@@ -480,65 +480,11 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
       return;
     }
 
-    const cleanGst = taxType === 'GST' ? (formData.gst_in || '').trim().toUpperCase() : '';
-    const cleanPhone = (formData.phone || '').trim();
-    const phoneDigits = cleanPhone.replace(/\D/g, '');
-    const editingId = editingCustomer ? (editingCustomer.customer_id || editingCustomer.id) : null;
-
-    // 1. CLIENT-SIDE DUPLICATE GST VALIDATION
-    if (cleanGst && !['URP', 'NON-GST', 'N/A', 'NA', 'UNREGISTERED'].includes(cleanGst)) {
-      const gstConflict = customers.find(c => {
-        const cId = c.customer_id || c.id;
-        if (editingId && String(cId) === String(editingId)) return false;
-        return c.gst_in && c.gst_in.trim().toUpperCase() === cleanGst;
-      });
-      if (gstConflict) {
-        showNotification(`Customer with GSTIN "${cleanGst}" already exists (${gstConflict.name} - ${gstConflict.customer_code}). Duplicate GST is not allowed.`, 'error');
-        return;
-      }
-    }
-
-    // 2. CLIENT-SIDE DUPLICATE PHONE NUMBER VALIDATION
-    if (cleanPhone) {
-      const phoneConflict = customers.find(c => {
-        const cId = c.customer_id || c.id;
-        if (editingId && String(cId) === String(editingId)) return false;
-        if (!c.phone) return false;
-        const existingClean = c.phone.trim();
-        const existingDigits = existingClean.replace(/\D/g, '');
-        if (existingClean === cleanPhone) return true;
-        if (phoneDigits.length >= 10 && existingDigits.length >= 10 && existingDigits.slice(-10) === phoneDigits.slice(-10)) return true;
-        return false;
-      });
-      if (phoneConflict) {
-        showNotification(`Customer with phone number "${cleanPhone}" already exists (${phoneConflict.name} - ${phoneConflict.customer_code}). Duplicate phone number is not allowed.`, 'error');
-        return;
-      }
-    }
-
-    // 3. SALESMAN CREATING CUSTOMER: DUPLICATE STORE NAME RESTRICTION
-    const isSalesmanUser = !isAdmin || user?.role === 'SALESMAN' || user?.role === 'SALES_EXECUTIVE' || user?.role_code === 'SALESMAN';
-    if (isSalesmanUser && formData.name && formData.name.trim()) {
-      const cleanName = formData.name.trim().toLowerCase();
-      const cleanRoute = (formData.route_area || '').trim().toLowerCase();
-      const storeConflict = customers.find(c => {
-        const cId = c.customer_id || c.id;
-        if (editingId && String(cId) === String(editingId)) return false;
-        const matchName = c.name && c.name.trim().toLowerCase() === cleanName;
-        const matchRoute = cleanRoute && c.route_area && c.route_area.trim().toLowerCase() === cleanRoute;
-        return matchName && matchRoute;
-      });
-      if (storeConflict) {
-        showNotification(`Duplicate store entry: "${formData.name.trim()}" already exists on beat "${storeConflict.route_area || formData.route_area}" (${storeConflict.customer_code}). Duplicate customer creation by salesman is not allowed.`, 'error');
-        return;
-      }
-    }
-
     const payload = {
       ...formData,
       branch_id: (!isAdmin && userBranchId) ? Number(userBranchId) : (formData.branch_id ? Number(formData.branch_id) : null),
       warehouse_id: formData.warehouse_id ? Number(formData.warehouse_id) : null,
-      gst_in: cleanGst
+      gst_in: taxType === 'GST' ? (formData.gst_in || '').trim().toUpperCase() : ''
     };
 
     try {

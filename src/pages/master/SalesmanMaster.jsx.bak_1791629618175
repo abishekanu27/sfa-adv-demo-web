@@ -221,40 +221,6 @@ export const SalesmanMaster = ({ selectedBranchId }) => {
       return;
     }
 
-    const editingId = editingSalesman ? editingSalesman.id : null;
-
-    // 1. CLIENT-SIDE DUPLICATE PHONE CHECK
-    if (formData.phone && formData.phone.trim()) {
-      const cleanPhone = formData.phone.trim();
-      const phoneDigits = cleanPhone.replace(/\D/g, '');
-      const phoneConflict = salesmen.find(sm => {
-        if (editingId && sm.id === editingId) return false;
-        if (!sm.phone) return false;
-        const exPhone = sm.phone.trim();
-        const exDigits = exPhone.replace(/\D/g, '');
-        if (exPhone === cleanPhone) return true;
-        if (phoneDigits.length >= 10 && exDigits.length >= 10 && exDigits.slice(-10) === phoneDigits.slice(-10)) return true;
-        return false;
-      });
-      if (phoneConflict) {
-        showToast(`A salesman with phone "${cleanPhone}" already exists (${phoneConflict.name}). Duplicate phone is not allowed.`, 'error');
-        return;
-      }
-    }
-
-    // 2. CLIENT-SIDE DUPLICATE EMAIL CHECK
-    if (formData.email && formData.email.trim()) {
-      const cleanEmail = formData.email.trim().toLowerCase();
-      const emailConflict = salesmen.find(sm => {
-        if (editingId && sm.id === editingId) return false;
-        return sm.email && sm.email.trim().toLowerCase() === cleanEmail;
-      });
-      if (emailConflict) {
-        showToast(`A salesman with email "${formData.email}" already exists (${emailConflict.name}). Duplicate email is not allowed.`, 'error');
-        return;
-      }
-    }
-
     try {
       setIsSubmitting(true);
       const salesRole = roles.find(r => r.role_code === 'SALESMAN') || roles[0];

@@ -9,7 +9,8 @@ import {
   Building2, 
   BarChart3,
   FileText,
-  ShoppingCart
+  ShoppingCart,
+  Gift
 } from 'lucide-react';
 import { 
   isUserAdmin, 
@@ -98,7 +99,15 @@ export const Sidebar = ({ activeView, onViewChange, onLogout, user, companySetti
     'master-mappings'
   ].includes(activeView);
 
-  // 5. Menu 5: Invoices
+  // 5. Menu 5: Schemes & Offers
+  const isSchemesActive = [
+    'schemes',
+    'schemes-list',
+    'schemes-simulator',
+    'schemes-add'
+  ].includes(activeView);
+
+  // 6. Menu 6: Invoices
   const isInvoicesActive = (activeView === 'invoices-list' || activeView === 'invoices');
 
   // 6. Menu 6: Reports
@@ -236,6 +245,21 @@ export const Sidebar = ({ activeView, onViewChange, onLogout, user, companySetti
               <div className="nav-btn-left">
                 <Truck size={17} className="nav-icon" />
                 <span className="group-title-highlight">Sales</span>
+              </div>
+            </button>
+          </div>
+        )}
+
+        {/* 6. Schemes & Offers */}
+        {canShowGroup(['schemes-list', 'schemes-simulator'], 'schemes') && (
+          <div className="nav-group-item">
+            <button 
+              className={`nav-main-btn ${isSchemesActive ? 'active' : ''}`}
+              onClick={() => onViewChange('schemes')}
+            >
+              <div className="nav-btn-left">
+                <Gift size={17} className="nav-icon" />
+                <span className="group-title-highlight">Schemes &amp; Offers</span>
               </div>
             </button>
           </div>

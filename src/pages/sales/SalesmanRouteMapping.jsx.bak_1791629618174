@@ -199,32 +199,6 @@ export const SalesmanRouteMapping = ({ onNavigateToRoutes }) => {
       return;
     }
 
-    // CLIENT-SIDE DUPLICATE SALESMAN MAPPING VALIDATION
-    if (formData.status === 'Active') {
-      const editingId = formData.mapping_id;
-      const smConflict = mappings.find(m => {
-        if (editingId && String(m.mapping_id) === String(editingId)) return false;
-        if (m.status !== 'Active') return false;
-        return String(m.salesman_id) === String(formData.salesman_id);
-      });
-      if (smConflict) {
-        showNotification(`Sales executive is already actively mapped to ${smConflict.route_name || smConflict.district}${smConflict.vehicle_reg_no ? ' (' + smConflict.vehicle_reg_no + ')' : ''}. Duplicate active salesman assignment is not allowed.`, 'error');
-        return;
-      }
-
-      if (formData.vehicle_id) {
-        const vehConflict = mappings.find(m => {
-          if (editingId && String(m.mapping_id) === String(editingId)) return false;
-          if (m.status !== 'Active') return false;
-          return String(m.vehicle_id) === String(formData.vehicle_id);
-        });
-        if (vehConflict) {
-          showNotification(`Vehicle is already assigned to active sales executive "${vehConflict.salesman_name}". Duplicate vehicle mapping is not allowed.`, 'error');
-          return;
-        }
-      }
-    }
-
     try {
       setIsSubmitting(true);
       const res = await fetch(`${API_BASE}/sales/mappings`, {
