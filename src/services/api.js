@@ -8,12 +8,19 @@ export const getAuthHeaders = (customHeaders = {}) => {
       const u = JSON.parse(rawUser);
       if (u.email) headers['x-user-email'] = u.email;
       if (u.id) headers['x-user-id'] = u.id;
+      // If user is non-admin, strictly enforce their assigned branch
+      const isAdmin = u.role === 'ADMIN' || u.role === 'SUPER_ADMIN' || u.role_code === 'ADMIN' || (Array.isArray(u.allowed_modules) && u.allowed_modules.includes('all_access'));
+      if (!isAdmin && u.branch_id) {
+        headers['x-branch-id'] = String(u.branch_id);
+      }
     }
   } catch (e) {}
   try {
-    const activeBranch = localStorage.getItem('sf_nexus_active_branch') || localStorage.getItem('active_branch_id');
-    if (activeBranch) {
-      headers['x-branch-id'] = String(activeBranch);
+    if (!headers['x-branch-id']) {
+      const activeBranch = localStorage.getItem('sf_nexus_active_branch') || localStorage.getItem('active_branch_id');
+      if (activeBranch) {
+        headers['x-branch-id'] = String(activeBranch);
+      }
     }
   } catch (e) {}
   try {
@@ -50,6 +57,18 @@ export const loginApi = async (usernameOrEmail, password, rememberMe = true) => 
     throw new Error(data.message || 'Authentication failed');
   }
   return data;
+};
+
+export const fetchMeApi = async () => {
+  try {
+    const res = await fetch(`${API_BASE}/auth/me`, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to fetch user session');
+    return await res.json();
+  } catch (err) {
+    return null;
+  }
 };
 
 export const fetchSystemStatus = async () => {
@@ -670,7 +689,9 @@ export const fetchCustomerMappingSummaryApi = async (branchId = '') => {
 };
 
 export const fetchCustomerByIdApi = async (id) => {
-  const res = await fetch(`${API_BASE}/customers/${id}`);
+  const res = await fetch(`${API_BASE}/customers/${id}`, {
+    headers: getAuthHeaders()
+  });
   if (!res.ok) throw new Error('Failed to fetch customer details');
   const json = await res.json();
   return json.data;
@@ -678,7 +699,9 @@ export const fetchCustomerByIdApi = async (id) => {
 
 export const fetchNextCustomerCodeApi = async () => {
   try {
-    const res = await fetch(`${API_BASE}/customers/next-code`);
+    const res = await fetch(`${API_BASE}/customers/next-code`, {
+      headers: getAuthHeaders()
+    });
     if (!res.ok) return null;
     const json = await res.json();
     return json.nextCode;
@@ -690,7 +713,7 @@ export const fetchNextCustomerCodeApi = async () => {
 export const createCustomerApi = async (customerData) => {
   const res = await fetch(`${API_BASE}/customers`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(customerData)
   });
   const json = await res.json();
@@ -701,7 +724,7 @@ export const createCustomerApi = async (customerData) => {
 export const updateCustomerApi = async (id, customerData) => {
   const res = await fetch(`${API_BASE}/customers/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(customerData)
   });
   const json = await res.json();
@@ -711,7 +734,8 @@ export const updateCustomerApi = async (id, customerData) => {
 
 export const deleteCustomerApi = async (id) => {
   const res = await fetch(`${API_BASE}/customers/${id}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: getAuthHeaders()
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.message || 'Failed to delete customer');
@@ -962,7 +986,7 @@ export const fetchWarehousesApi = async (search = '', branchId = '') => {
   if (search) params.append('search', search);
   if (branchId && branchId !== 'all') params.append('branch_id', branchId);
   const url = `${API_BASE}/stocks/warehouses${params.toString() ? `?${params.toString()}` : ''}`;
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch warehouses');
   const json = await res.json();
   return json.warehouses || [];
@@ -971,7 +995,7 @@ export const fetchWarehousesApi = async (search = '', branchId = '') => {
 export const createWarehouseApi = async (whData) => {
   const res = await fetch(`${API_BASE}/stocks/warehouses`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(whData)
   });
   const data = await res.json();
@@ -982,7 +1006,7 @@ export const createWarehouseApi = async (whData) => {
 export const updateWarehouseApi = async (whId, whData) => {
   const res = await fetch(`${API_BASE}/stocks/warehouses/${whId}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(whData)
   });
   const data = await res.json();
@@ -992,7 +1016,8 @@ export const updateWarehouseApi = async (whId, whData) => {
 
 export const deleteWarehouseApi = async (whId) => {
   const res = await fetch(`${API_BASE}/stocks/warehouses/${whId}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: getAuthHeaders()
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Failed to delete warehouse');
@@ -1008,7 +1033,7 @@ export const fetchBranchesApi = async (params = {}) => {
     if (params.search) q.append('search', params.search);
     if (params.status && params.status !== 'all') q.append('status', params.status);
     const url = `${API_BASE}/branches${q.toString() ? `?${q.toString()}` : ''}`;
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error('Failed to fetch branches');
     const data = await res.json();
     return data.branches || [];
@@ -1019,7 +1044,7 @@ export const fetchBranchesApi = async (params = {}) => {
 };
 
 export const fetchBranchByIdApi = async (id) => {
-  const res = await fetch(`${API_BASE}/branches/${id}`);
+  const res = await fetch(`${API_BASE}/branches/${id}`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch branch details');
   const data = await res.json();
   return data.branch;
@@ -1102,7 +1127,7 @@ export const bulkImportStockApi = async (entries) => {
 export const bulkImportCustomersApi = async (customers) => {
   const res = await fetch(`${API_BASE}/customers/bulk-import`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ customers })
   });
   const data = await res.json();
@@ -1296,8 +1321,13 @@ export const fetchRoutesApi = async (params = {}) => {
   if (params.search) query.append('search', params.search);
   if (params.district && params.district !== 'all') query.append('district', params.district);
   if (params.status && params.status !== 'all') query.append('status', params.status);
+  if (params.branch_id && params.branch_id !== 'all' && params.branch_id !== 'ALL' && params.branch_id !== '*') {
+    query.append('branch_id', params.branch_id);
+  }
 
-  const res = await fetch(`${API_BASE}/sales/routes?${query.toString()}`);
+  const res = await fetch(`${API_BASE}/sales/routes?${query.toString()}`, {
+    headers: getAuthHeaders()
+  });
   if (!res.ok) throw new Error('Failed to fetch routes');
   return await res.json();
 };
@@ -1305,7 +1335,7 @@ export const fetchRoutesApi = async (params = {}) => {
 export const createRouteApi = async (routeData) => {
   const res = await fetch(`${API_BASE}/sales/routes`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(routeData)
   });
   const data = await res.json();
@@ -1316,7 +1346,7 @@ export const createRouteApi = async (routeData) => {
 export const updateRouteApi = async (routeId, routeData) => {
   const res = await fetch(`${API_BASE}/sales/routes/${routeId}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(routeData)
   });
   const data = await res.json();
@@ -1326,7 +1356,8 @@ export const updateRouteApi = async (routeId, routeData) => {
 
 export const deleteRouteApi = async (routeId) => {
   const res = await fetch(`${API_BASE}/sales/routes/${routeId}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: getAuthHeaders()
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Failed to delete route');

@@ -3,6 +3,7 @@ import { LoginPage } from './pages/LoginPage';
 import { MainLayout } from './components/MainLayout';
 import { TopLoadingBar, PageLoader } from './components/PageLoader';
 import { getFirstAccessibleMenu } from './utils/permissions';
+import { fetchMeApi } from './services/api';
 import './index.css';
 
 class ErrorBoundary extends React.Component {
@@ -122,6 +123,22 @@ export function App() {
     window.addEventListener('userPermissionsUpdated', handlePermissionsUpdated);
     return () => window.removeEventListener('userPermissionsUpdated', handlePermissionsUpdated);
   }, []);
+
+  // Sync live user profile and permissions from server on mount / token change
+  useEffect(() => {
+    if (!token) return;
+    fetchMeApi().then(res => {
+      if (res && res.success && res.user) {
+        setCurrentUser(res.user);
+        try {
+          localStorage.setItem('salesforce_user', JSON.stringify(res.user));
+          localStorage.setItem('sf_nexus_user', JSON.stringify(res.user));
+        } catch (e) {}
+      }
+    }).catch(err => {
+      console.warn('Silent user session refresh notice:', err);
+    });
+  }, [token]);
 
   const handleLogout = (isAutoLogout = false) => {
     setCurrentUser(null);

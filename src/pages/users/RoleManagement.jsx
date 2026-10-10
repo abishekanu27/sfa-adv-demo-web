@@ -380,7 +380,7 @@ export const RoleManagement = () => {
 
         // Immediately update current logged-in user cache if they belong to this role
         try {
-          const rawUser = localStorage.getItem('salesforce_user');
+          const rawUser = localStorage.getItem('salesforce_user') || localStorage.getItem('sf_nexus_user');
           if (rawUser) {
             const curUser = JSON.parse(rawUser);
             if (curUser.role_id === editingRole.role_id || curUser.role === editingRole.role_code || curUser.role_code === editingRole.role_code) {
@@ -391,6 +391,7 @@ export const RoleManagement = () => {
                 can_login_mobile: payload.can_login_mobile
               };
               localStorage.setItem('salesforce_user', JSON.stringify(updatedUser));
+              localStorage.setItem('sf_nexus_user', JSON.stringify(updatedUser));
               window.dispatchEvent(new CustomEvent('userPermissionsUpdated', { detail: updatedUser }));
             }
           }
