@@ -13,20 +13,31 @@ import {
   CheckSquare,
   Square,
   Building,
+  Building2,
   Layers,
-  ArrowRight
+  ArrowRight,
+  Eye,
+  Calendar,
+  FileText
 } from 'lucide-react';
 import {
   fetchRoutesApi,
   createRouteApi,
   updateRouteApi,
-  deleteRouteApi
+  deleteRouteApi,
+  fetchBranchesApi
 } from '../../services/api';
+import { getUserFromStorage, isUserAdmin } from '../../utils/permissions';
 import { KERALA_DISTRICTS, getLocalAreasForKeralaDistrict } from '../../data/locationData';
 import './RouteManagement.css';
 
 export const RouteManagement = () => {
+  const currentUser = getUserFromStorage();
+  const isAdmin = isUserAdmin(currentUser);
+  const userBranchId = currentUser?.branch_id || null;
+
   const [routes, setRoutes] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [metrics, setMetrics] = useState({
     total_routes: 0,
     active_routes: 0,
@@ -36,11 +47,13 @@ export const RouteManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [districtFilter, setDistrictFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [branchFilter, setBranchFilter] = useState(isAdmin ? 'all' : (userBranchId ? String(userBranchId) : 'all'));
   const [toast, setToast] = useState(null);
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
   const [editingRoute, setEditingRoute] = useState(null);
+  const [viewingRoute, setViewingRoute] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customAreaInput, setCustomAreaInput] = useState('');
 
@@ -52,7 +65,8 @@ export const RouteManagement = () => {
     state: 'Kerala',
     local_areas: [],
     description: '',
-    status: 'Active'
+    status: 'Active',
+    branch_id: ''
   });
 
   const showNotification = (msg, type = 'success') => {
@@ -60,13 +74,24 @@ export const RouteManagement = () => {
     setTimeout(() => setToast(null), 3500);
   };
 
+  // Load branches list
+  useEffect(() => {
+    fetchBranchesApi()
+      .then(res => {
+        const bList = Array.isArray(res) ? res : [];
+        setBranches(bList);
+      })
+      .catch(err => console.warn('Could not load branches in RouteManagement:', err));
+  }, []);
+
   const loadRoutes = async () => {
     try {
       setLoading(true);
       const res = await fetchRoutesApi({
         search: searchQuery,
         district: districtFilter,
-        status: statusFilter
+        status: statusFilter,
+        branch_id: branchFilter
       });
       if (res.success) {
         setRoutes(res.routes || []);
@@ -82,7 +107,7 @@ export const RouteManagement = () => {
 
   useEffect(() => {
     loadRoutes();
-  }, [searchQuery, districtFilter, statusFilter]);
+  }, [searchQuery, districtFilter, statusFilter, branchFilter]);
 
   const handleOpenAddModal = () => {
     setEditingRoute(null);
@@ -101,6 +126,10 @@ export const RouteManagement = () => {
     }, 0);
     const nextCode = `RT-${String(maxCode + 1).padStart(3, '0')}`;
 
+    const defaultBranchId = !isAdmin
+      ? (userBranchId || (branches[0]?.branch_id || ''))
+      : (branchFilter !== 'all' ? branchFilter : (branches[0]?.branch_id || ''));
+
     setFormData({
       route_code: nextCode,
       route_name: '',
@@ -108,7 +137,8 @@ export const RouteManagement = () => {
       state: 'Kerala',
       local_areas: defaultAreas,
       description: '',
-      status: 'Active'
+      status: 'Active',
+      branch_id: defaultBranchId
     });
     setCustomAreaInput('');
     setShowModal(true);
@@ -125,6 +155,8 @@ export const RouteManagement = () => {
       parsedAreas = [];
     }
 
+    const currentBranchId = r.branch_id || (!isAdmin ? (userBranchId || '') : (branches[0]?.branch_id || ''));
+
     setFormData({
       route_code: r.route_code || '',
       route_name: r.route_name || '',
@@ -132,10 +164,16 @@ export const RouteManagement = () => {
       state: r.state || 'Kerala',
       local_areas: parsedAreas,
       description: r.description || '',
-      status: r.status || 'Active'
+      status: r.status || 'Active',
+      branch_id: currentBranchId
     });
     setCustomAreaInput('');
     setShowModal(true);
+  };
+
+  const handleOpenViewModal = (r, e) => {
+    if (e) e.stopPropagation();
+    setViewingRoute(r);
   };
 
   const handleDistrictChange = (dist) => {
@@ -188,6 +226,10 @@ export const RouteManagement = () => {
       showNotification('District is required', 'error');
       return;
     }
+    if (!formData.branch_id) {
+      showNotification('Assigned Branch is required', 'error');
+      return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -221,6 +263,13 @@ export const RouteManagement = () => {
       console.error(err);
       showNotification(err.message || 'Failed to delete route', 'error');
     }
+  };
+
+  // Helper to resolve branch name for display
+  const getBranchDisplayName = (bId, fallbackName) => {
+    if (!bId) return fallbackName || 'Main Branch & Central Depot';
+    const found = branches.find(b => String(b.branch_id) === String(bId));
+    return found ? found.branch_name : (fallbackName || 'Main Branch & Central Depot');
   };
 
   return (
@@ -287,6 +336,39 @@ export const RouteManagement = () => {
         </div>
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Branch Filter: Dropdown for Admin, Read-Only Badge for Sub-Branch users */}
+          {isAdmin ? (
+            <select
+              className="route-filter-select"
+              value={branchFilter}
+              onChange={(e) => setBranchFilter(e.target.value)}
+            >
+              <option value="all">All Branches</option>
+              {branches.map((b) => (
+                <option key={b.branch_id} value={b.branch_id}>{b.branch_name}</option>
+              ))}
+            </select>
+          ) : (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: '#f0fdf4',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              border: '1px solid #bbf7d0',
+              color: '#166534',
+              fontWeight: 600,
+              fontSize: '12.5px'
+            }}>
+              <Building2 size={14} color="#16a34a" />
+              <span>Assigned Branch: {getBranchDisplayName(userBranchId, currentUser?.branch_name)}</span>
+              <span style={{ fontSize: '11px', background: '#dcfce7', padding: '1px 6px', borderRadius: '4px', border: '1px solid #86efac' }}>
+                🔒 Read-Only
+              </span>
+            </div>
+          )}
+
           <select
             className="route-filter-select"
             value={districtFilter}
@@ -347,6 +429,7 @@ export const RouteManagement = () => {
               <tr>
                 <th>Route Code</th>
                 <th>Route / Beat Name</th>
+                <th>Branch</th>
                 <th>District & State</th>
                 <th>Assigned Local Areas / Stops</th>
                 <th>Status</th>
@@ -361,6 +444,8 @@ export const RouteManagement = () => {
                 } catch {
                   areas = [];
                 }
+                const assignedBranchName = getBranchDisplayName(r.branch_id, r.branch_name);
+
                 return (
                   <tr key={r.route_id}>
                     <td>
@@ -369,6 +454,22 @@ export const RouteManagement = () => {
                     <td>
                       <div className="route-name-title">{r.route_name}</div>
                       {r.description && <div className="route-desc-sub" title={r.description}>{r.description}</div>}
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Building2 size={14} color="#0284c7" />
+                        <span style={{
+                          fontWeight: 600,
+                          color: '#0369a1',
+                          backgroundColor: '#f0f9ff',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          border: '1px solid #bae6fd'
+                        }}>
+                          {assignedBranchName}
+                        </span>
+                      </div>
                     </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -397,6 +498,14 @@ export const RouteManagement = () => {
                     </td>
                     <td style={{ textAlign: 'center' }}>
                       <div style={{ display: 'inline-flex', gap: '6px' }}>
+                        <button
+                          className="icon-action-btn"
+                          title="View Route Details"
+                          style={{ color: '#0284c7' }}
+                          onClick={(e) => handleOpenViewModal(r, e)}
+                        >
+                          <Eye size={14} />
+                        </button>
                         <button
                           className="icon-action-btn"
                           title="Edit Route"
@@ -459,6 +568,65 @@ export const RouteManagement = () => {
                       ))}
                     </select>
                   </div>
+                </div>
+
+                {/* Assigned Branch Field: Selectable for Admin, Locked for Sub-branch users */}
+                <div className="form-group">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label style={{ margin: 0, fontWeight: 600 }}>Assigned Branch *</label>
+                    {!isAdmin && (
+                      <span style={{ fontSize: '11px', color: '#166534', fontWeight: 600 }}>
+                        🔒 Auto-Assigned to your Branch
+                      </span>
+                    )}
+                  </div>
+                  {isAdmin ? (
+                    <select
+                      className="form-select"
+                      required
+                      value={formData.branch_id}
+                      onChange={(e) => setFormData(prev => ({ ...prev, branch_id: e.target.value }))}
+                    >
+                      <option value="">Select Branch...</option>
+                      {branches.map(b => (
+                        <option key={b.branch_id} value={b.branch_id}>
+                          {b.branch_name} ({b.branch_code || `BR-${b.branch_id}`}) - {b.district || 'Kerala'}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '9px 12px',
+                        background: '#f8fafc',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        color: '#1e293b',
+                        fontWeight: 600
+                      }}>
+                        <Building2 size={16} color="#0284c7" />
+                        <span>{getBranchDisplayName(userBranchId, currentUser?.branch_name)}</span>
+                        <span style={{
+                          marginLeft: 'auto',
+                          fontSize: '11px',
+                          background: '#e2e8f0',
+                          color: '#475569',
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          fontWeight: 500
+                        }}>
+                          🔒 Read-Only
+                        </span>
+                      </div>
+                      <small style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                        Sub-branch users cannot reassign routes to other branches.
+                      </small>
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -567,6 +735,148 @@ export const RouteManagement = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Route Details Modal */}
+      {viewingRoute && (
+        <div className="modal-overlay" onClick={() => setViewingRoute(null)}>
+          <div className="modal-content-card" style={{ maxWidth: '580px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Navigation size={18} color="#2563eb" />
+                  <span>Route Beat Details</span>
+                </h2>
+                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                  System Code: <strong style={{ color: '#0f172a' }}>{viewingRoute.route_code}</strong>
+                </div>
+              </div>
+              <button className="modal-close-btn" onClick={() => setViewingRoute(null)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Route Summary Banner */}
+              <div style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '10px',
+                padding: '14px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>{viewingRoute.route_name}</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px', color: '#64748b', fontSize: '13px' }}>
+                    <MapPin size={14} color="#64748b" />
+                    <span>{viewingRoute.district}, {viewingRoute.state || 'Kerala'}</span>
+                  </div>
+                </div>
+                <span className={`status-pill ${viewingRoute.status === 'Active' ? 'paid' : 'unpaid'}`}>
+                  {viewingRoute.status || 'Active'}
+                </span>
+              </div>
+
+              {/* Branch Assignment Details */}
+              <div style={{
+                background: '#f0f9ff',
+                border: '1px solid #bae6fd',
+                borderRadius: '10px',
+                padding: '12px 14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '8px',
+                  background: '#e0f2fe',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#0284c7'
+                }}>
+                  <Building2 size={18} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0369a1', fontWeight: 700 }}>
+                    Assigned Operating Branch
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#0c4a6e' }}>
+                    {getBranchDisplayName(viewingRoute.branch_id, viewingRoute.branch_name)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              {viewingRoute.description && (
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
+                    Description & Beat Notes
+                  </label>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#334155', background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                    {viewingRoute.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Assigned Local Areas */}
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '6px' }}>
+                  Assigned Stops & Commercial Areas ({(() => {
+                    try {
+                      const a = Array.isArray(viewingRoute.local_areas) ? viewingRoute.local_areas : JSON.parse(viewingRoute.local_areas || '[]');
+                      return a.length;
+                    } catch { return 0; }
+                  })()})
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxHeight: '140px', overflowY: 'auto', padding: '2px' }}>
+                  {(() => {
+                    let areas = [];
+                    try {
+                      areas = Array.isArray(viewingRoute.local_areas) ? viewingRoute.local_areas : JSON.parse(viewingRoute.local_areas || '[]');
+                    } catch { areas = []; }
+
+                    return areas.length > 0 ? (
+                      areas.map((a, i) => (
+                        <span key={i} className="area-chip-tag" style={{ fontSize: '12px', padding: '4px 10px' }}>
+                          {a}
+                        </span>
+                      ))
+                    ) : (
+                      <span style={{ fontSize: '12.5px', color: '#94a3b8' }}>No specific areas mapped to this route.</span>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setViewingRoute(null)}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => {
+                  const target = viewingRoute;
+                  setViewingRoute(null);
+                  handleOpenEditModal(target);
+                }}
+              >
+                <Edit2 size={14} style={{ marginRight: '6px' }} />
+                <span>Edit Route</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -22,7 +22,8 @@ import {
   UploadCloud,
   FileSpreadsheet,
   Receipt,
-  Navigation
+  Navigation,
+  Warehouse
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import {
@@ -35,8 +36,10 @@ import {
   updateCustomerPriceGroupApi,
   fetchPriceGroupsApi,
   bulkImportCustomersApi,
-  fetchBranchesApi
+  fetchBranchesApi,
+  fetchWarehousesApi
 } from '../../services/api';
+import { getUserFromStorage, isUserAdmin } from '../../utils/permissions';
 import {
   getKeralaDistricts,
   getLocalAreasForKeralaDistrict
@@ -44,6 +47,10 @@ import {
 import './CustomerDetails.css';
 
 export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selectedBranchId }) => {
+  const user = getUserFromStorage();
+  const isAdmin = isUserAdmin(user);
+  const userBranchId = user?.branch_id ? String(user.branch_id) : '';
+
   const [customers, setCustomers] = useState([]);
   const [metrics, setMetrics] = useState({
     total_customers: 0,
@@ -58,7 +65,11 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
   });
   const [priceGroups, setPriceGroups] = useState([]);
   const [branches, setBranches] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
   const [selectedBranchFilter, setSelectedBranchFilter] = useState(() => {
+    if (!isAdmin && userBranchId) {
+      return userBranchId;
+    }
     try {
       const activeSessionBranch = localStorage.getItem('sf_nexus_active_branch');
       if (activeSessionBranch && activeSessionBranch !== 'all' && activeSessionBranch !== 'ALL') {
@@ -96,6 +107,10 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
   // Helper to detect logged-in web user's active branch
   const getLoggedInUserBranch = (branchList = []) => {
     try {
+      if (!isAdmin && userBranchId) {
+        const match = branchList.find(b => String(b.branch_id) === String(userBranchId));
+        if (match) return match;
+      }
       // 1. Session active branch in header switcher if selected
       const activeSessionBranch = localStorage.getItem('sf_nexus_active_branch');
       if (activeSessionBranch && activeSessionBranch !== 'all' && activeSessionBranch !== 'ALL') {
@@ -121,17 +136,6 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
     return branchList[0] || null;
   };
 
-  // Sync with global header branch switcher
-  useEffect(() => {
-    const handleActiveBranchChanged = (e) => {
-      if (e?.detail) {
-        setSelectedBranchFilter(e.detail);
-      }
-    };
-    window.addEventListener('activeBranchChanged', handleActiveBranchChanged);
-    return () => window.removeEventListener('activeBranchChanged', handleActiveBranchChanged);
-  }, []);
-
   // Customer Form
   const [formData, setFormData] = useState({
     customer_code: '',
@@ -139,8 +143,10 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
     contact_person: '',
     phone: '',
     email: '',
-    branch_id: '',
+    branch_id: (!isAdmin && userBranchId) ? Number(userBranchId) : '',
     branch_name: '',
+    warehouse_id: '',
+    warehouse_name: '',
     state: 'Kerala',
     district: 'Ernakulam',
     local_area: 'Broadway Wholesale Market',
@@ -188,11 +194,15 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
     const newDistrict = selectedBr?.district || formData.district || 'Ernakulam';
     const areas = getLocalAreasForKeralaDistrict(newDistrict);
     const defaultArea = areas[0] || '';
+    const branchWhs = warehouses.filter(w => String(w.branch_id) === String(branchId));
+    const defaultWh = branchWhs[0] || null;
 
     setFormData(prev => ({
       ...prev,
       branch_id: branchId ? Number(branchId) : '',
       branch_name: brName,
+      warehouse_id: defaultWh ? defaultWh.warehouse_id : '',
+      warehouse_name: defaultWh ? defaultWh.name : '',
       district: newDistrict,
       local_area: defaultArea,
       place: composePlace(defaultArea, newDistrict),
@@ -246,16 +256,19 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
   const loadData = async () => {
     setLoading(true);
     try {
-      const [custList, custMetrics, pgs, brList] = await Promise.all([
-        fetchCustomersApi(searchQuery, selectedGroupFilter, selectedStatusFilter, taxFilter, selectedBranchFilter),
-        fetchCustomerMetricsApi(selectedBranchFilter),
+      const effectiveBranch = (!isAdmin && userBranchId) ? userBranchId : selectedBranchFilter;
+      const [custList, custMetrics, pgs, brList, whList] = await Promise.all([
+        fetchCustomersApi(searchQuery, selectedGroupFilter, selectedStatusFilter, taxFilter, effectiveBranch),
+        fetchCustomerMetricsApi(effectiveBranch),
         fetchPriceGroupsApi(),
-        fetchBranchesApi({ status: 'Active' })
+        fetchBranchesApi({ status: 'Active' }),
+        fetchWarehousesApi()
       ]);
       setCustomers(custList);
       setMetrics(custMetrics);
       setPriceGroups(pgs);
       setBranches(brList || []);
+      setWarehouses(whList || []);
     } catch (err) {
       console.error('Error loading customer data:', err);
     } finally {
@@ -264,21 +277,23 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
   };
 
   useEffect(() => {
-    if (selectedBranchId !== undefined && selectedBranchId !== null) {
+    if (isAdmin && selectedBranchId !== undefined && selectedBranchId !== null) {
       setSelectedBranchFilter(String(selectedBranchId));
     }
-  }, [selectedBranchId]);
+  }, [selectedBranchId, isAdmin]);
 
+  // Sync with global header branch switcher (only for authorized admin)
   useEffect(() => {
     const handleActiveBranchChanged = (e) => {
-      const bId = e?.detail?.branchId;
+      if (!isAdmin) return;
+      const bId = e?.detail?.branchId !== undefined ? e.detail.branchId : e?.detail;
       if (bId !== undefined && bId !== null) {
         setSelectedBranchFilter(String(bId));
       }
     };
     window.addEventListener('activeBranchChanged', handleActiveBranchChanged);
     return () => window.removeEventListener('activeBranchChanged', handleActiveBranchChanged);
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
     loadData();
@@ -292,11 +307,18 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
   // Open Add Modal
   const handleOpenAddModal = () => {
     setEditingCustomer(null);
-    const defaultBranch = getLoggedInUserBranch(branches);
+    const defaultBranch = (!isAdmin && userBranchId)
+      ? (branches.find(b => String(b.branch_id) === String(userBranchId)) || getLoggedInUserBranch(branches))
+      : getLoggedInUserBranch(branches);
     const defaultDistrict = defaultBranch?.district || 'Ernakulam';
     const areas = getLocalAreasForKeralaDistrict(defaultDistrict);
     const defaultArea = areas[0] || 'Broadway Wholesale Market';
     setTaxType(taxFilter === 'non_gst' ? 'NON_GST' : 'GST');
+
+    const branchWhs = defaultBranch?.branch_id
+      ? warehouses.filter(w => String(w.branch_id) === String(defaultBranch.branch_id))
+      : [];
+    const defaultWh = branchWhs[0] || null;
 
     // Auto-calculate unique random customer code like CI47HB153
     const generateRandomCustomerCode = () => {
@@ -320,6 +342,8 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
       email: '',
       branch_id: defaultBranch ? defaultBranch.branch_id : '',
       branch_name: defaultBranch ? defaultBranch.branch_name : '',
+      warehouse_id: defaultWh ? defaultWh.warehouse_id : '',
+      warehouse_name: defaultWh ? defaultWh.name : '',
       state: 'Kerala',
       district: defaultDistrict,
       local_area: defaultArea,
@@ -349,15 +373,21 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
   // Auto-select logged-in user branch when branches load while Add modal is open
   useEffect(() => {
     if (showCustomerModal && !editingCustomer && !formData.branch_id && branches.length > 0) {
-      const activeBr = getLoggedInUserBranch(branches);
+      const activeBr = (!isAdmin && userBranchId)
+        ? (branches.find(b => String(b.branch_id) === String(userBranchId)) || getLoggedInUserBranch(branches))
+        : getLoggedInUserBranch(branches);
       if (activeBr) {
         const newDist = activeBr.district || formData.district || 'Ernakulam';
         const areas = getLocalAreasForKeralaDistrict(newDist);
         const defaultArea = areas[0] || formData.local_area;
+        const branchWhs = warehouses.filter(w => String(w.branch_id) === String(activeBr.branch_id));
+        const defaultWh = branchWhs[0] || null;
         setFormData(prev => ({
           ...prev,
           branch_id: activeBr.branch_id,
           branch_name: activeBr.branch_name,
+          warehouse_id: prev.warehouse_id || (defaultWh ? defaultWh.warehouse_id : ''),
+          warehouse_name: prev.warehouse_name || (defaultWh ? defaultWh.name : ''),
           district: newDist,
           local_area: defaultArea,
           place: composePlace(defaultArea, newDist),
@@ -365,14 +395,18 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
         }));
       }
     }
-  }, [branches, showCustomerModal, editingCustomer]);
+  }, [branches, warehouses, showCustomerModal, editingCustomer, isAdmin, userBranchId]);
 
   // Open Edit Modal
   const handleOpenEditModal = (c, e) => {
     if (e) e.stopPropagation();
     setEditingCustomer(c);
-    const loggedInBranch = getLoggedInUserBranch(branches);
-    const activeBranchId = c.branch_id || (loggedInBranch ? loggedInBranch.branch_id : (branches[0]?.branch_id || ''));
+    const loggedInBranch = (!isAdmin && userBranchId)
+      ? (branches.find(b => String(b.branch_id) === String(userBranchId)) || getLoggedInUserBranch(branches))
+      : getLoggedInUserBranch(branches);
+    const activeBranchId = (!isAdmin && userBranchId)
+      ? userBranchId
+      : (c.branch_id || (loggedInBranch ? loggedInBranch.branch_id : (branches[0]?.branch_id || '')));
     const matchedBranch = branches.find(b => String(b.branch_id) === String(activeBranchId)) || loggedInBranch || branches[0] || null;
     const distVal = c.district || matchedBranch?.district || 'Ernakulam';
     const areaVal = c.local_area || (c.place ? c.place.split(',')[0].trim() : '');
@@ -380,6 +414,23 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
     const isCustom = Boolean(areaVal && !districtAreas.includes(areaVal));
     const hasGst = Boolean(c.gst_in && c.gst_in.trim() && !['URP', 'NON-GST'].includes(c.gst_in.trim().toUpperCase()));
     setTaxType(hasGst ? 'GST' : 'NON_GST');
+
+    const branchWhs = matchedBranch?.branch_id
+      ? warehouses.filter(w => String(w.branch_id) === String(matchedBranch.branch_id))
+      : [];
+    let initialWhId = c.warehouse_id || '';
+    let initialWhName = c.warehouse_name || '';
+
+    if (!initialWhId || (branchWhs.length > 0 && !branchWhs.some(w => String(w.warehouse_id) === String(initialWhId)))) {
+      const defaultWh = branchWhs[0];
+      if (defaultWh) {
+        initialWhId = defaultWh.warehouse_id;
+        initialWhName = defaultWh.name;
+      }
+    } else if (initialWhId && !initialWhName) {
+      const matchedWh = warehouses.find(w => String(w.warehouse_id) === String(initialWhId));
+      if (matchedWh) initialWhName = matchedWh.name;
+    }
 
     setFormData({
       customer_code: c.customer_code || '',
@@ -389,6 +440,8 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
       email: c.email || '',
       branch_id: matchedBranch ? matchedBranch.branch_id : '',
       branch_name: matchedBranch ? matchedBranch.branch_name : '',
+      warehouse_id: initialWhId,
+      warehouse_name: initialWhName,
       state: 'Kerala',
       district: distVal,
       local_area: areaVal,
@@ -429,6 +482,8 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
 
     const payload = {
       ...formData,
+      branch_id: (!isAdmin && userBranchId) ? Number(userBranchId) : (formData.branch_id ? Number(formData.branch_id) : null),
+      warehouse_id: formData.warehouse_id ? Number(formData.warehouse_id) : null,
       gst_in: taxType === 'GST' ? (formData.gst_in || '').trim().toUpperCase() : ''
     };
 
@@ -919,21 +974,40 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
           </button>
         </div>
 
-        <div className="status-filter-select-wrap">
-          <select 
-            value={selectedBranchFilter}
-            onChange={(e) => setSelectedBranchFilter(e.target.value)}
-            className="filter-status-select"
-            style={{ borderColor: '#2563eb', fontWeight: 600, color: '#1d4ed8' }}
-          >
-            <option value="all">🏢 All Operating Branches</option>
-            {branches.map(b => (
-              <option key={b.branch_id} value={b.branch_id}>
-                🏢 {b.branch_name} ({b.branch_code})
-              </option>
-            ))}
-          </select>
-        </div>
+        {isAdmin ? (
+          <div className="status-filter-select-wrap">
+            <select 
+              value={selectedBranchFilter}
+              onChange={(e) => setSelectedBranchFilter(e.target.value)}
+              className="filter-status-select"
+              style={{ borderColor: '#2563eb', fontWeight: 600, color: '#1d4ed8' }}
+            >
+              <option value="all">🏢 All Operating Branches</option>
+              {branches.map(b => (
+                <option key={b.branch_id} value={b.branch_id}>
+                  🏢 {b.branch_name} ({b.branch_code})
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: '#f0fdf4',
+            padding: '6px 14px',
+            borderRadius: '8px',
+            border: '1px solid #bbf7d0',
+            color: '#166534',
+            fontWeight: 600,
+            fontSize: '13px'
+          }}>
+            <Building2 size={14} color="#16a34a" />
+            <span>Assigned Branch: {branches.find(b => String(b.branch_id) === String(userBranchId))?.branch_name || user?.branch_name || 'Palakkad Hub'}</span>
+            <span style={{ fontSize: '11px', background: '#dcfce7', padding: '2px 6px', borderRadius: '4px', border: '1px solid #86efac' }}>🔒 Read-Only</span>
+          </div>
+        )}
 
         <div className="status-filter-select-wrap">
           <select 
@@ -1007,22 +1081,42 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
                         )}
                       </td>
                       <td className="branch-rep-cell">
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          background: '#eff6ff',
-                          color: '#1d4ed8',
-                          border: '1px solid #bfdbfe',
-                          width: 'fit-content'
-                        }}>
-                          <Building2 size={12} />
-                          {c.branch_name || 'Central Branch'}
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            background: '#eff6ff',
+                            color: '#1d4ed8',
+                            border: '1px solid #bfdbfe',
+                            width: 'fit-content'
+                          }}>
+                            <Building2 size={12} />
+                            {c.branch_name || 'Central Branch'}
+                          </span>
+                          {c.warehouse_name && (
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '2px 7px',
+                              borderRadius: '5px',
+                              fontSize: '0.70rem',
+                              fontWeight: 600,
+                              background: '#f0fdf4',
+                              color: '#166534',
+                              border: '1px solid #bbf7d0',
+                              width: 'fit-content'
+                            }}>
+                              <Warehouse size={11} color="#059669" />
+                              {c.warehouse_name}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="contact-cell">
                         <div className="contact-cell-inner">
@@ -1340,32 +1434,142 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
                   </div>
                 </div>
 
-                {/* Branch Assignment */}
+                {/* Branch & Warehouse Assignment */}
                 <div className="location-hierarchy-box" style={{ background: '#f0fdf4', borderColor: '#bbf7d0', marginBottom: '16px' }}>
                   <div className="box-header-row">
                     <Building2 size={16} className="text-emerald-700" />
                     <strong style={{ color: '#166534' }}>Branch Assignment *</strong>
                   </div>
                   <p className="box-desc" style={{ color: '#15803d' }}>
-                    Assign this customer to an operating branch. The district and commercial beat hierarchy automatically adapt to the selected branch depot.
+                    Assign this customer to an operating branch and designated warehouse depot. The beat hierarchy and fulfillment adapt accordingly.
                   </p>
 
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label style={{ fontWeight: 600 }}>Operating Branch *</label>
-                    <select 
-                      value={formData.branch_id || ''}
-                      required
-                      onChange={(e) => handleBranchChange(e.target.value)}
-                      className="location-select"
-                      style={{ borderColor: '#86efac' }}
-                    >
-                      <option value="">-- Select Operating Branch --</option>
-                      {branches.map(b => (
-                        <option key={b.branch_id} value={b.branch_id}>
-                          {b.branch_name} ({b.branch_code}) - {b.district || 'Kerala'}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="form-row-2" style={{ marginBottom: 0 }}>
+                    {/* Operating Branch */}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <label style={{ fontWeight: 600, margin: 0 }}>Operating Branch *</label>
+                        {!isAdmin && (
+                          <span style={{ fontSize: '11px', color: '#15803d', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            🔒 Read-Only (Sub-Branch Access)
+                          </span>
+                        )}
+                      </div>
+                      {isAdmin ? (
+                        <select 
+                          value={formData.branch_id || ''}
+                          required
+                          onChange={(e) => handleBranchChange(e.target.value)}
+                          className="location-select"
+                          style={{ borderColor: '#86efac' }}
+                        >
+                          <option value="">-- Select Operating Branch --</option>
+                          {branches.map(b => (
+                            <option key={b.branch_id} value={b.branch_id}>
+                              {b.branch_name} ({b.branch_code}) - {b.district || 'Kerala'}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div>
+                          <select
+                            disabled
+                            value={formData.branch_id || ''}
+                            className="location-select"
+                            style={{
+                              backgroundColor: '#f8fafc',
+                              cursor: 'not-allowed',
+                              borderColor: '#cbd5e1',
+                              color: '#334155',
+                              fontWeight: 600
+                            }}
+                          >
+                            {branches.map(b => (
+                              <option key={b.branch_id} value={b.branch_id}>
+                                {b.branch_name} ({b.branch_code}) - {b.district || 'Kerala'}
+                              </option>
+                            ))}
+                          </select>
+                          <small style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                            Assigned branch is fixed to your authorized sub-branch and cannot be changed.
+                          </small>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Warehouse Selection / Auto-Assignment */}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <label style={{ fontWeight: 600, margin: 0 }}>Assigned Warehouse Depot *</label>
+                        {!isAdmin && (
+                          <span style={{ fontSize: '11px', color: '#0369a1', fontWeight: 600 }}>
+                            {warehouses.filter(w => String(w.branch_id) === String(formData.branch_id)).length <= 1 ? '🔒 Auto-Assigned Depot' : 'Branch Warehouses Only'}
+                          </span>
+                        )}
+                      </div>
+
+                      {(() => {
+                        const branchWhs = warehouses.filter(w => String(w.branch_id) === String(formData.branch_id));
+
+                        if (!isAdmin && branchWhs.length <= 1) {
+                          const autoWh = branchWhs[0];
+                          return (
+                            <div>
+                              <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '8px 12px',
+                                background: '#f8fafc',
+                                border: '1px solid #cbd5e1',
+                                borderRadius: '6px',
+                                fontSize: '13px',
+                                color: '#334155',
+                                fontWeight: 600,
+                                minHeight: '38px'
+                              }}>
+                                <Warehouse size={15} color="#059669" />
+                                <span>{autoWh ? `${autoWh.name} (${autoWh.code})` : (formData.warehouse_name || 'Branch Main Depot')}</span>
+                              </div>
+                              <small style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                                Automatically linked to your branch fulfillment depot.
+                              </small>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div>
+                            <select
+                              value={formData.warehouse_id || ''}
+                              required
+                              onChange={(e) => {
+                                const wh = branchWhs.find(w => String(w.warehouse_id) === String(e.target.value));
+                                setFormData(prev => ({
+                                  ...prev,
+                                  warehouse_id: wh ? wh.warehouse_id : '',
+                                  warehouse_name: wh ? wh.name : ''
+                                }));
+                              }}
+                              className="location-select"
+                              style={{ borderColor: '#86efac' }}
+                            >
+                              <option value="">
+                                {branchWhs.length === 0 ? '-- No Warehouses Mapped to this Branch --' : '-- Select Branch Warehouse --'}
+                              </option>
+                              {branchWhs.map(w => (
+                                <option key={w.warehouse_id} value={w.warehouse_id}>
+                                  {w.name} ({w.code}) - {w.location || 'Depot'}
+                                </option>
+                              ))}
+                            </select>
+                            <small style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                              {!isAdmin ? 'Restricted strictly to your branch warehouses.' : 'Fulfillment warehouse for the selected branch.'}
+                            </small>
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
                 </div>
 

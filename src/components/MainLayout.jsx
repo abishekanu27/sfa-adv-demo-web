@@ -62,11 +62,18 @@ export const MainLayout = ({ user, onLogout }) => {
   const isAdmin = isUserAdmin(user);
   const [branches, setBranches] = useState([]);
   const [selectedBranchId, setSelectedBranchId] = useState(() => {
+    if (!isAdmin) {
+      const uBr = user?.branch_id ? String(user.branch_id) : '1';
+      try {
+        localStorage.setItem('sf_nexus_active_branch', uBr);
+      } catch (e) {}
+      return uBr;
+    }
     try {
       const saved = localStorage.getItem('sf_nexus_active_branch');
       if (saved) return saved;
     } catch (e) {}
-    return (user?.role === 'ADMIN' || user?.role_code === 'ADMIN') ? 'all' : (user?.branch_id ? String(user.branch_id) : '1');
+    return 'all';
   });
 
   useEffect(() => {
@@ -76,6 +83,7 @@ export const MainLayout = ({ user, onLogout }) => {
   }, []);
 
   const handleBranchSwitch = (bId) => {
+    if (!isAdmin) return; // Prevent non-admin branch switching
     setSelectedBranchId(bId);
     try {
       localStorage.setItem('sf_nexus_active_branch', bId);
@@ -242,7 +250,7 @@ export const MainLayout = ({ user, onLogout }) => {
 
             {/* Branch Switcher or Branch Locked Badge */}
             <div className="top-nav-branch-selector">
-              {isAdmin || (Array.isArray(user?.assigned_branches) && user.assigned_branches.length > 1) ? (
+              {isAdmin ? (
                 <div className="branch-dropdown-wrapper">
                   <Building2 size={15} color="#2563eb" />
                   <select 

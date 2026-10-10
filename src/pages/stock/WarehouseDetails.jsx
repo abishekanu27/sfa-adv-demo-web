@@ -23,14 +23,19 @@ import {
   deleteWarehouseApi,
   fetchBranchesApi
 } from '../../services/api';
+import { getUserFromStorage, isUserAdmin } from '../../utils/permissions';
 import './WarehouseDetails.css';
 
 export const WarehouseDetails = () => {
+  const user = getUserFromStorage();
+  const isAdmin = isUserAdmin(user);
+  const userBranchId = user?.branch_id ? String(user.branch_id) : '';
+
   const [warehouses, setWarehouses] = useState([]);
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [branchFilter, setBranchFilter] = useState('all');
+  const [branchFilter, setBranchFilter] = useState(() => (!isAdmin && userBranchId) ? userBranchId : 'all');
   const [showModal, setShowModal] = useState(false);
   const [editingWh, setEditingWh] = useState(null);
   const [toast, setToast] = useState(null);
@@ -38,7 +43,7 @@ export const WarehouseDetails = () => {
   const [formData, setFormData] = useState({
     code: '',
     name: '',
-    branch_id: '',
+    branch_id: (!isAdmin && userBranchId) ? userBranchId : '',
     location: '',
     manager_name: '',
     phone: '',
@@ -83,10 +88,11 @@ export const WarehouseDetails = () => {
 
   const handleOpenAdd = () => {
     setEditingWh(null);
+    const defaultBranchId = (!isAdmin && userBranchId) ? userBranchId : (branches[0]?.branch_id || '1');
     setFormData({
       code: '',
       name: '',
-      branch_id: branches[0]?.branch_id || '1',
+      branch_id: defaultBranchId,
       location: '',
       manager_name: '',
       phone: '',
@@ -98,10 +104,11 @@ export const WarehouseDetails = () => {
 
   const handleOpenEdit = (wh) => {
     setEditingWh(wh);
+    const defaultBranchId = (!isAdmin && userBranchId) ? userBranchId : (wh.branch_id || branches[0]?.branch_id || '1');
     setFormData({
       code: wh.code,
       name: wh.name,
-      branch_id: wh.branch_id || branches[0]?.branch_id || '1',
+      branch_id: defaultBranchId,
       location: wh.location,
       manager_name: wh.manager_name || '',
       phone: wh.phone || '',
@@ -205,21 +212,29 @@ export const WarehouseDetails = () => {
           />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f8fafc', padding: '6px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-          <Building2 size={14} color="#64748b" />
-          <select 
-            value={branchFilter} 
-            onChange={(e) => setBranchFilter(e.target.value)}
-            style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '13px', fontWeight: '500', color: '#334155', cursor: 'pointer' }}
-          >
-            <option value="all">All Branches</option>
-            {branches.map(b => (
-              <option key={b.branch_id} value={b.branch_id}>
-                {b.branch_code} - {b.branch_name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {isAdmin ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f8fafc', padding: '6px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            <Building2 size={14} color="#64748b" />
+            <select 
+              value={branchFilter} 
+              onChange={(e) => setBranchFilter(e.target.value)}
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '13px', fontWeight: '500', color: '#334155', cursor: 'pointer' }}
+            >
+              <option value="all">All Branches</option>
+              {branches.map(b => (
+                <option key={b.branch_id} value={b.branch_id}>
+                  {b.branch_code} - {b.branch_name}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f0fdf4', padding: '6px 14px', borderRadius: '8px', border: '1px solid #bbf7d0', color: '#166534', fontWeight: 600, fontSize: '13px' }}>
+            <Building2 size={14} color="#16a34a" />
+            <span>Assigned Branch: {branches.find(b => String(b.branch_id) === String(userBranchId))?.branch_name || user?.branch_name || 'My Branch'}</span>
+            <span style={{ fontSize: '11px', background: '#dcfce7', padding: '2px 6px', borderRadius: '4px', border: '1px solid #86efac' }}>🔒 Read-Only</span>
+          </div>
+        )}
       </div>
 
       {/* Warehouses Table */}
@@ -330,20 +345,47 @@ export const WarehouseDetails = () => {
               <div className="modal-body">
                 {/* Mandatory Branch Field */}
                 <div className="form-group" style={{ marginBottom: '16px' }}>
-                  <label>Assigned Branch *</label>
-                  <select
-                    className="form-select"
-                    required
-                    value={formData.branch_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, branch_id: e.target.value }))}
-                  >
-                    <option value="">Select Branch</option>
-                    {branches.map(b => (
-                      <option key={b.branch_id} value={b.branch_id}>
-                        {b.branch_code} - {b.branch_name} ({b.city})
-                      </option>
-                    ))}
-                  </select>
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>Assigned Branch *</span>
+                    {!isAdmin && (
+                      <span style={{ fontSize: '11px', color: '#15803d', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        🔒 Read-Only (Sub-Branch Access)
+                      </span>
+                    )}
+                  </label>
+                  {isAdmin ? (
+                    <select
+                      className="form-select"
+                      required
+                      value={formData.branch_id}
+                      onChange={(e) => setFormData(prev => ({ ...prev, branch_id: e.target.value }))}
+                    >
+                      <option value="">Select Branch</option>
+                      {branches.map(b => (
+                        <option key={b.branch_id} value={b.branch_id}>
+                          {b.branch_code} - {b.branch_name} ({b.city})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div>
+                      <select
+                        className="form-select"
+                        disabled
+                        value={formData.branch_id}
+                        style={{ background: '#f8fafc', color: '#334155', cursor: 'not-allowed', borderColor: '#cbd5e1' }}
+                      >
+                        {branches.map(b => (
+                          <option key={b.branch_id} value={b.branch_id}>
+                            {b.branch_code} - {b.branch_name} ({b.city})
+                          </option>
+                        ))}
+                      </select>
+                      <small style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                        The Assigned Branch is fixed for sub-branch users and cannot be changed.
+                      </small>
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-grid-2">
