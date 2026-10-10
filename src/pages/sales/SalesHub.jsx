@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
+  Users,
   Truck, 
   MapPin, 
   PackagePlus, 
@@ -10,6 +11,7 @@ import {
   Receipt,
   Navigation
 } from 'lucide-react';
+import { SalesmanMaster } from '../master/SalesmanMaster';
 import { VehicleManagement } from './VehicleManagement';
 import { RouteManagement } from './RouteManagement';
 import { SalesmanRouteMapping } from './SalesmanRouteMapping';
@@ -19,21 +21,22 @@ import { VanToVanRequests } from './VanToVanRequests';
 import { SalesmanLiveTrack } from './SalesmanLiveTrack';
 import { ReturnStock } from './ReturnStock';
 import { SalesExpenses } from './SalesExpenses';
-import { getUserFromStorage, hasSubmenuPermission } from '../../utils/permissions';
+import { getUserFromStorage, hasSubmenuPermission, isUserAdmin } from '../../utils/permissions';
 import '../../components/ModuleHubTabs.css';
 
 export const SalesHub = ({
-  initialTab = 'sales-vehicles',
+  initialTab = 'sales-routes',
   onTabChange,
   user,
-  companySettings
+  companySettings,
+  selectedBranchId
 }) => {
   const currentUser = user || getUserFromStorage();
 
   const allTabs = [
-    { key: 'sales-vehicles', label: 'Vehicle Adding', icon: Truck },
-    { key: 'sales-routes', label: 'Route Master', icon: Navigation },
-    { key: 'sales-mappings', label: 'Salesman & Route Mapping', icon: MapPin },
+    { key: 'sales-routes', label: 'Route', icon: Navigation },
+    { key: 'sales-mappings', label: 'Route Mapping', icon: MapPin },
+    { key: 'sales-vehicles', label: 'Vehicle Management', icon: Truck },
     { key: 'sales-stock-adding', label: 'Stock Adding', icon: PackagePlus },
     { key: 'sales-stock-requests', label: 'Stock Requests', icon: Inbox },
     { key: 'sales-v2v-transfers', label: 'Van to Van Transfers', icon: ArrowRightLeft },
@@ -42,13 +45,28 @@ export const SalesHub = ({
     { key: 'sales-expenses', label: 'Expenses', icon: Receipt }
   ];
 
-  const visibleTabs = allTabs.filter(tab => hasSubmenuPermission(currentUser, tab.key, 'sales'));
+  const mapTabKey = (key) => {
+    if (!key || key === 'sales') return 'sales-routes';
+    if (key === 'master' || key === 'master-routes') return 'sales-routes';
+    if (key === 'master-salesman' || key === 'sales-salesman') return 'sales-routes';
+    if (key === 'master-vehicles') return 'sales-vehicles';
+    if (key === 'master-mappings') return 'sales-mappings';
+    return key;
+  };
+
+  const visibleTabs = allTabs.filter(tab => {
+    if (isUserAdmin(currentUser)) return true;
+    const legacyKey = tab.key.replace('sales-', 'master-');
+    return hasSubmenuPermission(currentUser, tab.key, 'sales') ||
+           hasSubmenuPermission(currentUser, legacyKey, 'master') ||
+           hasSubmenuPermission(currentUser, 'sales');
+  });
 
   const normalizeTab = (t) => {
+    const mapped = mapTabKey(t);
     const list = visibleTabs.length > 0 ? visibleTabs : allTabs;
-    if (!t || t === 'sales') return list[0]?.key || 'sales-vehicles';
-    const found = list.find(tab => tab.key === t);
-    return found ? found.key : (list[0]?.key || 'sales-vehicles');
+    const found = list.find(tab => tab.key === mapped);
+    return found ? found.key : (list[0]?.key || 'sales-routes');
   };
 
   const [activeTab, setActiveTab] = useState(() => normalizeTab(initialTab));
@@ -69,7 +87,7 @@ export const SalesHub = ({
       {/* Top Hub Navigation Bar */}
       <div className="module-hub-header print-hidden">
         <div className="module-hub-tabs-scroll">
-          {visibleTabs.map((tab) => {
+          {(visibleTabs.length > 0 ? visibleTabs : allTabs).map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.key;
             return (
@@ -91,16 +109,20 @@ export const SalesHub = ({
 
       {/* Active Tab Content */}
       <div className="module-hub-content">
-        {activeTab === 'sales-vehicles' && (
-          <VehicleManagement />
+        {(activeTab === 'sales-routes' || activeTab === 'master-routes') && (
+          <RouteManagement onNavigateToMappings={() => handleTabClick('sales-mappings')} selectedBranchId={selectedBranchId} />
         )}
 
-        {activeTab === 'sales-routes' && (
-          <RouteManagement onNavigateToMappings={() => handleTabClick('sales-mappings')} />
+        {(activeTab === 'sales-salesman' || activeTab === 'master-salesman') && (
+          <SalesmanMaster selectedBranchId={selectedBranchId} />
         )}
 
-        {activeTab === 'sales-mappings' && (
-          <SalesmanRouteMapping onNavigateToRoutes={() => handleTabClick('sales-routes')} />
+        {(activeTab === 'sales-mappings' || activeTab === 'master-mappings') && (
+          <SalesmanRouteMapping onNavigateToRoutes={() => handleTabClick('sales-routes')} selectedBranchId={selectedBranchId} />
+        )}
+
+        {(activeTab === 'sales-vehicles' || activeTab === 'master-vehicles') && (
+          <VehicleManagement selectedBranchId={selectedBranchId} />
         )}
 
         {activeTab === 'sales-stock-adding' && (

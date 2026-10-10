@@ -24,10 +24,11 @@ import {
 } from 'lucide-react';
 import { fetchCompanySettings, updateCompanySettingsApi } from '../../services/api';
 import { InvoiceTemplateSheet } from '../../components/InvoiceTemplateSheet';
+import { BranchManagement } from './BranchManagement';
 import './SettingsPage.css';
 
 export const SettingsPage = ({ initialTab = 'company', onSettingsUpdate }) => {
-  const [activeTab, setActiveTab] = useState(initialTab); // 'company' or 'templates'
+  const [activeTab, setActiveTab] = useState(initialTab); // 'company' | 'templates' | 'branches'
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
@@ -277,15 +278,17 @@ export const SettingsPage = ({ initialTab = 'company', onSettingsUpdate }) => {
         </div>
 
         <div className="settings-header-actions">
-          <button 
-            type="button" 
-            className="btn-settings-save"
-            onClick={handleSaveSettings}
-            disabled={saving}
-          >
-            {saving ? <RefreshCw size={16} className="spin-icon" /> : <Save size={16} />}
-            <span>{saving ? 'Saving...' : 'Save All Settings'}</span>
-          </button>
+          {activeTab !== 'branches' && (
+            <button 
+              type="button" 
+              className="btn-settings-save"
+              onClick={handleSaveSettings}
+              disabled={saving}
+            >
+              {saving ? <RefreshCw size={16} className="spin-icon" /> : <Save size={16} />}
+              <span>{saving ? 'Saving...' : 'Save All Settings'}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -305,6 +308,14 @@ export const SettingsPage = ({ initialTab = 'company', onSettingsUpdate }) => {
           <Printer size={17} />
           <span>GST & Print Templates Designer</span>
           <span className="tab-pill-badge">5 Layouts</span>
+        </button>
+        <button 
+          className={`settings-tab-btn ${activeTab === 'branches' ? 'tab-active' : ''}`}
+          onClick={() => setActiveTab('branches')}
+        >
+          <Building2 size={17} />
+          <span>Branch Management</span>
+          <span className="tab-pill-badge">Multi-Branch</span>
         </button>
       </div>
 
@@ -1183,6 +1194,13 @@ export const SettingsPage = ({ initialTab = 'company', onSettingsUpdate }) => {
             />
           </div>
         </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 3: BRANCH MANAGEMENT                                                   */}
+      {/* ========================================================================= */}
+      {activeTab === 'branches' && (
+        <BranchManagement />
       )}
 
     </div>

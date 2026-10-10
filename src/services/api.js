@@ -1,5 +1,30 @@
 export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+export const getAuthHeaders = (customHeaders = {}) => {
+  const headers = { ...customHeaders };
+  try {
+    const rawUser = localStorage.getItem('sf_nexus_user') || localStorage.getItem('salesforce_user');
+    if (rawUser) {
+      const u = JSON.parse(rawUser);
+      if (u.email) headers['x-user-email'] = u.email;
+      if (u.id) headers['x-user-id'] = u.id;
+    }
+  } catch (e) {}
+  try {
+    const activeBranch = localStorage.getItem('sf_nexus_active_branch') || localStorage.getItem('active_branch_id');
+    if (activeBranch) {
+      headers['x-branch-id'] = String(activeBranch);
+    }
+  } catch (e) {}
+  try {
+    const token = localStorage.getItem('salesforce_token') || localStorage.getItem('sf_nexus_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  } catch (e) {}
+  return headers;
+};
+
 export const DEMO_CREDENTIALS = {
   admin: {
     username: 'admin',
@@ -89,10 +114,16 @@ export const updateCompanySettingsApi = async (settings) => {
   return data;
 };
 
-export const fetchDashboardData = async (userEmail) => {
+export const fetchDashboardData = async (userEmail, branchId = null) => {
   try {
-    const url = userEmail ? `${API_BASE}/dashboard?email=${encodeURIComponent(userEmail)}` : `${API_BASE}/dashboard`;
-    const res = await fetch(url);
+    const params = new URLSearchParams();
+    if (userEmail) params.append('email', userEmail);
+    if (branchId) params.append('branch_id', String(branchId));
+    const url = `${API_BASE}/dashboard${params.toString() ? `?${params.toString()}` : ''}`;
+    const headers = {};
+    if (userEmail) headers['x-user-email'] = userEmail;
+    if (branchId) headers['x-branch-id'] = String(branchId);
+    const res = await fetch(url, { headers });
     if (!res.ok) throw new Error('Failed to load dashboard data');
     const json = await res.json();
     return json.data;
@@ -149,6 +180,15 @@ export const createCategoryApi = async (categoryData) => {
   const json = await res.json();
   if (!res.ok) throw new Error(json.message || 'Failed to create category');
   return json.data;
+};
+
+export const deleteCategoryApi = async (id) => {
+  const res = await fetch(`${API_BASE}/products/categories/${id}`, {
+    method: 'DELETE'
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message || 'Failed to delete category');
+  return json;
 };
 
 export const fetchProductsApi = async (category = 'All', search = '') => {
@@ -563,7 +603,7 @@ export const deleteWarehouseTransferApi = async (id) => {
 // CUSTOMERS & PRICE GROUP MAPPING APIS
 // ==========================================
 
-export const fetchCustomersApi = async (search = '', priceGroupId = 'all', status = 'all', gstType = 'all') => {
+export const fetchCustomersApi = async (search = '', priceGroupId = 'all', status = 'all', gstType = 'all', branchId = '') => {
   try {
     const params = new URLSearchParams();
     if (search) params.append('search', search);
@@ -571,7 +611,13 @@ export const fetchCustomersApi = async (search = '', priceGroupId = 'all', statu
     if (status && status !== 'all') params.append('status', status);
     if (gstType && gstType !== 'all') params.append('gst_type', gstType);
 
-    const res = await fetch(`${API_BASE}/customers?${params.toString()}`);
+    const activeBranch = branchId || localStorage.getItem('sf_nexus_active_branch') || 'all';
+    if (activeBranch && activeBranch !== 'all') {
+      params.append('branch_id', activeBranch);
+    }
+
+    const headers = getAuthHeaders(activeBranch && activeBranch !== 'all' ? { 'x-branch-id': String(activeBranch) } : {});
+    const res = await fetch(`${API_BASE}/customers?${params.toString()}`, { headers });
     if (!res.ok) throw new Error('Failed to fetch customers');
     const json = await res.json();
     return json.data || [];
@@ -581,9 +627,12 @@ export const fetchCustomersApi = async (search = '', priceGroupId = 'all', statu
   }
 };
 
-export const fetchCustomerMetricsApi = async () => {
+export const fetchCustomerMetricsApi = async (branchId = '') => {
   try {
-    const res = await fetch(`${API_BASE}/customers/metrics`);
+    const activeBranch = branchId || localStorage.getItem('sf_nexus_active_branch') || 'all';
+    const q = activeBranch && activeBranch !== 'all' ? `?branch_id=${activeBranch}` : '';
+    const headers = getAuthHeaders(activeBranch && activeBranch !== 'all' ? { 'x-branch-id': String(activeBranch) } : {});
+    const res = await fetch(`${API_BASE}/customers/metrics${q}`, { headers });
     if (!res.ok) throw new Error('Failed to fetch customer metrics');
     const json = await res.json();
     return json.data || {
@@ -605,9 +654,12 @@ export const fetchCustomerMetricsApi = async () => {
   }
 };
 
-export const fetchCustomerMappingSummaryApi = async () => {
+export const fetchCustomerMappingSummaryApi = async (branchId = '') => {
   try {
-    const res = await fetch(`${API_BASE}/customers/mapping-summary`);
+    const activeBranch = branchId || localStorage.getItem('sf_nexus_active_branch') || 'all';
+    const q = activeBranch && activeBranch !== 'all' ? `?branch_id=${activeBranch}` : '';
+    const headers = getAuthHeaders(activeBranch && activeBranch !== 'all' ? { 'x-branch-id': String(activeBranch) } : {});
+    const res = await fetch(`${API_BASE}/customers/mapping-summary${q}`, { headers });
     if (!res.ok) throw new Error('Failed to fetch mapping summary');
     const json = await res.json();
     return json.data || { price_groups: [], unassigned_count: 0 };
@@ -702,7 +754,7 @@ export const fetchRolesApi = async () => {
 export const createRoleApi = async (roleData) => {
   const res = await fetch(`${API_BASE}/roles`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(roleData)
   });
   const json = await res.json();
@@ -713,7 +765,7 @@ export const createRoleApi = async (roleData) => {
 export const updateRoleApi = async (roleId, roleData) => {
   const res = await fetch(`${API_BASE}/roles/${roleId}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(roleData)
   });
   const json = await res.json();
@@ -723,7 +775,8 @@ export const updateRoleApi = async (roleId, roleData) => {
 
 export const deleteRoleApi = async (roleId) => {
   const res = await fetch(`${API_BASE}/roles/${roleId}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: getAuthHeaders()
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.message || 'Failed to delete role');
@@ -731,7 +784,9 @@ export const deleteRoleApi = async (roleId) => {
 };
 
 export const fetchUsersApi = async () => {
-  const res = await fetch(`${API_BASE}/users`);
+  const res = await fetch(`${API_BASE}/users`, {
+    headers: getAuthHeaders()
+  });
   const json = await res.json();
   if (!res.ok) throw new Error(json.message || 'Failed to fetch users');
   return json.users || [];
@@ -750,7 +805,7 @@ export const fetchSalesExecutivesApi = async () => {
 export const createUserApi = async (userData) => {
   const res = await fetch(`${API_BASE}/users`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(userData)
   });
   const json = await res.json();
@@ -761,7 +816,7 @@ export const createUserApi = async (userData) => {
 export const updateUserApi = async (userId, userData) => {
   const res = await fetch(`${API_BASE}/users/${userId}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(userData)
   });
   const json = await res.json();
@@ -771,7 +826,8 @@ export const updateUserApi = async (userId, userData) => {
 
 export const toggleUserStatusApi = async (userId) => {
   const res = await fetch(`${API_BASE}/users/${userId}/status`, {
-    method: 'PATCH'
+    method: 'PATCH',
+    headers: getAuthHeaders()
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.message || 'Failed to toggle user status');
@@ -780,7 +836,8 @@ export const toggleUserStatusApi = async (userId) => {
 
 export const deleteUserApi = async (userId) => {
   const res = await fetch(`${API_BASE}/users/${userId}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: getAuthHeaders()
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.message || 'Failed to delete user');
@@ -791,9 +848,12 @@ export const deleteUserApi = async (userId) => {
 // REPORTS APIS (11 Specialized Enterprise Reports)
 // ==========================================
 
-export const fetchReportsSummary = async () => {
+export const fetchReportsSummary = async (branchId = null) => {
   try {
-    const res = await fetch(`${API_BASE}/reports/metrics`);
+    const activeBranch = branchId || localStorage.getItem('sf_nexus_active_branch') || 'all';
+    const q = activeBranch && activeBranch !== 'all' ? `?branch_id=${activeBranch}` : '';
+    const headers = getAuthHeaders(activeBranch && activeBranch !== 'all' ? { 'x-branch-id': String(activeBranch) } : {});
+    const res = await fetch(`${API_BASE}/reports/metrics${q}`, { headers });
     if (!res.ok) throw new Error('Failed to fetch reports summary metrics');
     const json = await res.json();
     return json.metrics;
@@ -806,6 +866,10 @@ export const fetchReportsSummary = async () => {
 export const fetchReportData = async (reportEndpoint, queryParams = {}) => {
   try {
     const searchParams = new URLSearchParams();
+    const activeBranch = queryParams.branch_id || localStorage.getItem('sf_nexus_active_branch') || 'all';
+    if (!queryParams.branch_id && activeBranch && activeBranch !== 'all') {
+      searchParams.append('branch_id', String(activeBranch));
+    }
     Object.entries(queryParams).forEach(([key, val]) => {
       if (val !== undefined && val !== null && val !== '') {
         searchParams.append(key, val);
@@ -814,7 +878,8 @@ export const fetchReportData = async (reportEndpoint, queryParams = {}) => {
 
     const queryString = searchParams.toString();
     const url = `${API_BASE}/reports/${reportEndpoint}${queryString ? `?${queryString}` : ''}`;
-    const res = await fetch(url);
+    const headers = getAuthHeaders(activeBranch && activeBranch !== 'all' ? { 'x-branch-id': String(activeBranch) } : {});
+    const res = await fetch(url, { headers });
     if (!res.ok) throw new Error(`Failed to fetch report from ${reportEndpoint}`);
     return await res.json();
   } catch (err) {
@@ -828,19 +893,29 @@ export const fetchReportData = async (reportEndpoint, queryParams = {}) => {
 // ==========================================
 export const fetchInvoicesApi = async (params = {}) => {
   const searchParams = new URLSearchParams();
+  const activeBranch = params.branch_id || localStorage.getItem('sf_nexus_active_branch') || 'all';
+  if (!params.branch_id && activeBranch && activeBranch !== 'all') {
+    searchParams.append('branch_id', String(activeBranch));
+  }
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== '') searchParams.append(k, v);
   });
   const qs = searchParams.toString();
-  const res = await fetch(`${API_BASE}/invoices${qs ? `?${qs}` : ''}`);
+  const headers = getAuthHeaders(activeBranch && activeBranch !== 'all' ? { 'x-branch-id': String(activeBranch) } : {});
+  const res = await fetch(`${API_BASE}/invoices${qs ? `?${qs}` : ''}`, { headers });
   if (!res.ok) throw new Error('Failed to fetch invoices');
   return await res.json();
 };
 
 export const createInvoiceApi = async (invoiceData) => {
+  const activeBranch = invoiceData?.branch_id || localStorage.getItem('sf_nexus_active_branch') || 'all';
+  const headers = getAuthHeaders({ 
+    'Content-Type': 'application/json',
+    ...(activeBranch && activeBranch !== 'all' ? { 'x-branch-id': String(activeBranch) } : {})
+  });
   const res = await fetch(`${API_BASE}/invoices`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(invoiceData)
   });
   const data = await res.json();
@@ -882,8 +957,11 @@ export const deleteInvoiceApi = async (invoiceId) => {
 // ==========================================
 // WAREHOUSES APIS
 // ==========================================
-export const fetchWarehousesApi = async (search = '') => {
-  const url = search ? `${API_BASE}/stocks/warehouses?search=${encodeURIComponent(search)}` : `${API_BASE}/stocks/warehouses`;
+export const fetchWarehousesApi = async (search = '', branchId = '') => {
+  const params = new URLSearchParams();
+  if (search) params.append('search', search);
+  if (branchId && branchId !== 'all') params.append('branch_id', branchId);
+  const url = `${API_BASE}/stocks/warehouses${params.toString() ? `?${params.toString()}` : ''}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error('Failed to fetch warehouses');
   const json = await res.json();
@@ -918,6 +996,92 @@ export const deleteWarehouseApi = async (whId) => {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Failed to delete warehouse');
+  return data;
+};
+
+// ==========================================
+// BRANCH MANAGEMENT APIS
+// ==========================================
+export const fetchBranchesApi = async (params = {}) => {
+  try {
+    const q = new URLSearchParams();
+    if (params.search) q.append('search', params.search);
+    if (params.status && params.status !== 'all') q.append('status', params.status);
+    const url = `${API_BASE}/branches${q.toString() ? `?${q.toString()}` : ''}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Failed to fetch branches');
+    const data = await res.json();
+    return data.branches || [];
+  } catch (err) {
+    console.warn('Error in fetchBranchesApi:', err);
+    return [];
+  }
+};
+
+export const fetchBranchByIdApi = async (id) => {
+  const res = await fetch(`${API_BASE}/branches/${id}`);
+  if (!res.ok) throw new Error('Failed to fetch branch details');
+  const data = await res.json();
+  return data.branch;
+};
+
+export const createBranchApi = async (branchData) => {
+  const res = await fetch(`${API_BASE}/branches`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(branchData)
+  });
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(`Server returned error status ${res.status}`);
+  }
+  if (!res.ok) throw new Error(data.message || 'Failed to create branch');
+  return data.branch;
+};
+
+export const updateBranchApi = async (id, branchData) => {
+  const res = await fetch(`${API_BASE}/branches/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(branchData)
+  });
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(`Server returned error status ${res.status}`);
+  }
+  if (!res.ok) throw new Error(data.message || 'Failed to update branch');
+  return data.branch;
+};
+
+export const toggleBranchStatusApi = async (id) => {
+  const res = await fetch(`${API_BASE}/branches/${id}/status`, {
+    method: 'PATCH'
+  });
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(`Server returned error status ${res.status}`);
+  }
+  if (!res.ok) throw new Error(data.message || 'Failed to toggle branch status');
+  return data.branch;
+};
+
+export const deleteBranchApi = async (id) => {
+  const res = await fetch(`${API_BASE}/branches/${id}`, {
+    method: 'DELETE'
+  });
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(`Server returned error status ${res.status}`);
+  }
+  if (!res.ok) throw new Error(data.message || 'Failed to delete branch');
   return data;
 };
 

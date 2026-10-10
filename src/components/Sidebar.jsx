@@ -78,18 +78,24 @@ export const Sidebar = ({ activeView, onViewChange, onLogout, user, companySetti
     'customers-credit-notes'
   ].includes(activeView);
 
-  // 4. Menu 4: Sales
+  // 4. Menu 4: Sales (Salesman, Vehicle Management, Route Master, Route Mapping, Field Operations)
   const isSalesActive = [
     'sales',
-    'sales-vehicles', 
+    'sales-salesman',
+    'sales-vehicles',
     'sales-routes',
-    'sales-mappings', 
+    'sales-mappings',
     'sales-stock-adding',
     'sales-stock-requests',
     'sales-v2v-transfers',
     'sales-live-track',
     'sales-returns',
-    'sales-expenses'
+    'sales-expenses',
+    'master',
+    'master-salesman',
+    'master-vehicles',
+    'master-routes',
+    'master-mappings'
   ].includes(activeView);
 
   // 5. Menu 5: Invoices
@@ -102,7 +108,7 @@ export const Sidebar = ({ activeView, onViewChange, onLogout, user, companySetti
   const isUsersActive = ['users', 'users-list', 'roles-list'].includes(activeView);
 
   // 8. Menu 8: Settings
-  const isSettingsActive = ['settings', 'settings-company', 'settings-templates'].includes(activeView);
+  const isSettingsActive = ['settings', 'settings-company', 'settings-templates', 'settings-branches', 'branches'].includes(activeView);
 
   // Role-based module visibility checks
   const canAccessVendors = hasPurchasesVendorsPermission(user);
@@ -146,6 +152,7 @@ export const Sidebar = ({ activeView, onViewChange, onLogout, user, companySetti
             </button>
           </div>
         )}
+
 
         {/* 2. Products & Stock */}
         {canShowGroup([
@@ -204,17 +211,22 @@ export const Sidebar = ({ activeView, onViewChange, onLogout, user, companySetti
           </div>
         )}
 
-        {/* 5. Sales */}
+        {/* 5. Sales (Salesman, Vehicle, Routes, Field Operations) */}
         {canShowGroup([
-          'sales-vehicles', 
+          'sales-salesman',
+          'sales-vehicles',
           'sales-routes',
-          'sales-mappings', 
+          'sales-mappings',
           'sales-stock-adding',
           'sales-stock-requests',
           'sales-v2v-transfers',
           'sales-live-track',
           'sales-returns',
-          'sales-expenses'
+          'sales-expenses',
+          'master-salesman',
+          'master-vehicles',
+          'master-routes',
+          'master-mappings'
         ], 'sales') && (
           <div className="nav-group-item">
             <button 

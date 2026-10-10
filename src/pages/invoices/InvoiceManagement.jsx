@@ -31,7 +31,7 @@ import {
 import { InvoiceTemplateSheet, formatInvoiceDateTime, formatInvoiceDateOnly } from '../../components/InvoiceTemplateSheet';
 import './InvoiceManagement.css';
 
-export const InvoiceManagement = ({ companySettings: initialCompanySettings }) => {
+export const InvoiceManagement = ({ companySettings: initialCompanySettings, selectedBranchId, user }) => {
   const [activeCompanySettings, setActiveCompanySettings] = useState(initialCompanySettings || null);
 
   useEffect(() => {
@@ -107,15 +107,17 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
     setTimeout(() => setToast(null), 3500);
   };
 
-  const loadInvoices = async () => {
+  const loadInvoices = async (branchOverride) => {
     setLoading(true);
     try {
+      const branchToFilter = branchOverride !== undefined ? branchOverride : (selectedBranchId || localStorage.getItem('sf_nexus_active_branch') || (user?.branch_id ? String(user.branch_id) : 'all'));
       const res = await fetchInvoicesApi({
         search: searchQuery,
         startDate,
         endDate,
         status: statusFilter,
-        invoice_type: invoiceTypeTab !== 'All' ? invoiceTypeTab : undefined
+        invoice_type: invoiceTypeTab !== 'All' ? invoiceTypeTab : undefined,
+        branch_id: branchToFilter
       });
       if (res.success) {
         setInvoices(res.invoices);
@@ -145,7 +147,16 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings }) =
   };
 
   useEffect(() => {
-    loadInvoices();
+    loadInvoices(selectedBranchId);
+  }, [searchQuery, startDate, endDate, statusFilter, invoiceTypeTab, selectedBranchId]);
+
+  useEffect(() => {
+    const handleBranchChange = (e) => {
+      const bId = e?.detail || localStorage.getItem('sf_nexus_active_branch') || 'all';
+      loadInvoices(bId);
+    };
+    window.addEventListener('activeBranchChanged', handleBranchChange);
+    return () => window.removeEventListener('activeBranchChanged', handleBranchChange);
   }, [searchQuery, startDate, endDate, statusFilter, invoiceTypeTab]);
 
   useEffect(() => {

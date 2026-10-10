@@ -191,7 +191,7 @@ const AlertCirclePlaceholder = ({ icon: Icon }) => (
   </div>
 );
 
-export const ReportsHub = ({ initialTab = 'payments', user }) => {
+export const ReportsHub = ({ initialTab = 'payments', user, selectedBranchId }) => {
   const currentUser = user || getUserFromStorage();
   const isAdmin = isUserAdmin(currentUser);
   const allowedModules = currentUser?.allowed_modules || [];
@@ -266,9 +266,10 @@ export const ReportsHub = ({ initialTab = 'payments', user }) => {
   }, [activeReportId, allowedReportConfigs]);
 
   // Load master metrics
-  const loadMasterMetrics = async () => {
+  const loadMasterMetrics = async (branchOverride) => {
     try {
-      const data = await fetchReportsSummary();
+      const activeBranch = branchOverride !== undefined ? branchOverride : (selectedBranchId || localStorage.getItem('sf_nexus_active_branch') || 'all');
+      const data = await fetchReportsSummary(activeBranch);
       if (data) setSummaryMetrics(data);
     } catch (err) {
       console.error('Failed to load metrics:', err);
@@ -283,11 +284,16 @@ export const ReportsHub = ({ initialTab = 'payments', user }) => {
     sDate = startDate,
     eDate = endDate,
     gType = gstSubTab,
-    custId = customerFilter
+    custId = customerFilter,
+    branchOverride
   ) => {
     setLoading(true);
     try {
+      const activeBranch = branchOverride !== undefined ? branchOverride : (selectedBranchId || localStorage.getItem('sf_nexus_active_branch') || 'all');
       const params = {};
+      if (activeBranch && activeBranch !== 'all') {
+        params.branch_id = activeBranch;
+      }
       if (query && query.trim()) params.search = query.trim();
       if (sDate) params.startDate = sDate;
       if (eDate) params.endDate = eDate;
@@ -342,15 +348,25 @@ export const ReportsHub = ({ initialTab = 'payments', user }) => {
   };
 
   useEffect(() => {
-    loadMasterMetrics();
-  }, []);
+    loadMasterMetrics(selectedBranchId);
+  }, [selectedBranchId]);
+
+  useEffect(() => {
+    const handleActiveBranchChanged = (e) => {
+      const bId = e?.detail?.branchId;
+      loadMasterMetrics(bId);
+      loadReportData(activeConfig.slug, searchQuery, secondaryFilter, startDate, endDate, gstSubTab, customerFilter, bId);
+    };
+    window.addEventListener('activeBranchChanged', handleActiveBranchChanged);
+    return () => window.removeEventListener('activeBranchChanged', handleActiveBranchChanged);
+  }, [activeConfig.slug, searchQuery, secondaryFilter, startDate, endDate, gstSubTab, customerFilter]);
 
   useEffect(() => {
     setSearchQuery('');
     setSecondaryFilter('All');
     setCustomerFilter('All');
-    loadReportData(activeConfig.slug, '', 'All', startDate, endDate, gstSubTab, 'All');
-  }, [activeReportId]);
+    loadReportData(activeConfig.slug, '', 'All', startDate, endDate, gstSubTab, 'All', selectedBranchId);
+  }, [activeReportId, selectedBranchId]);
 
   const handleSearchChange = (e) => {
     const val = e.target.value;

@@ -5,7 +5,7 @@
 
 export const getUserFromStorage = () => {
   try {
-    const raw = localStorage.getItem('salesforce_user');
+    const raw = localStorage.getItem('salesforce_user') || localStorage.getItem('sf_nexus_user');
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -45,6 +45,17 @@ export const hasSubmenuPermission = (user, subId, parentId = null) => {
     return true;
   }
 
+  if ((parentId === 'sales' || parentId === 'master') && 
+      (modules.includes('sales') || modules.includes('master'))) {
+    return true;
+  }
+
+  // Cross-compatibility for sales and legacy master modules
+  if (parentId === 'sales' && typeof subId === 'string') {
+    const legacyKey = subId.replace('sales-', 'master-');
+    if (modules.includes(legacyKey)) return true;
+  }
+
   return false;
 };
 
@@ -66,6 +77,11 @@ export const hasMenuPermission = (user, subIds = [], parentId = null) => {
 
   if (parentId === 'purchases-vendors' && 
       (modules.includes('purchases') || modules.includes('vendors') || modules.includes('purchases-vendors'))) {
+    return true;
+  }
+
+  if ((parentId === 'sales' || parentId === 'master') && 
+      (modules.includes('sales') || modules.includes('master'))) {
     return true;
   }
 
@@ -119,11 +135,16 @@ export const getFirstAccessibleMenu = (user) => {
   if (hasMenuPermission(user, ['products-list', 'stock-categories', 'products-price-groups', 'stock-total', 'stock-warehouses'], 'products-inventory')) return 'products-stock';
   if (hasPurchasesVendorsPermission(user) && hasMenuPermission(user, ['stock-vendors', 'stock-details', 'purchase-orders', 'warehouse-transfers', 'vendor-payments'], 'purchases-vendors')) return 'purchases-vendors';
   if (hasMenuPermission(user, ['customers-details', 'customers-price-mapping', 'customers-advance-booking', 'customers-credit-notes'], 'customers')) return 'customers';
-  if (hasMenuPermission(user, ['sales-vehicles', 'sales-routes', 'sales-mappings', 'sales-stock-adding', 'sales-stock-requests', 'sales-v2v-transfers', 'sales-live-track', 'sales-returns', 'sales-expenses'], 'sales')) return 'sales';
+  if (hasMenuPermission(user, [
+    'sales-salesman', 'sales-vehicles', 'sales-routes', 'sales-mappings',
+    'sales-stock-adding', 'sales-stock-requests', 'sales-v2v-transfers', 
+    'sales-live-track', 'sales-returns', 'sales-expenses',
+    'master-salesman', 'master-vehicles', 'master-routes', 'master-mappings'
+  ], 'sales')) return 'sales';
   if (hasSubmenuPermission(user, 'invoices-list', 'invoices') || hasMenuPermission(user, ['invoices-list'], 'invoices')) return 'invoices-list';
   if (hasSubmenuPermission(user, 'reports')) return 'reports';
   if (hasMenuPermission(user, ['users-list', 'roles-list'], 'users')) return 'users';
-  if (hasSubmenuPermission(user, 'settings')) return 'settings';
+  if (hasSubmenuPermission(user, 'settings') || hasSubmenuPermission(user, 'settings-branches')) return 'settings';
   return 'dashboard';
 };
 

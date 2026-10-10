@@ -295,7 +295,7 @@ export const SalesmanRouteMapping = ({ onNavigateToRoutes }) => {
               style={{ background: '#f8fafc', color: '#1e293b', border: '1px solid #cbd5e1' }}
             >
               <Navigation size={15} />
-              <span>Route Master (+ Add Route)</span>
+              <span>Route (+ Add Route)</span>
             </button>
           )}
           <button className="action-btn btn-primary" onClick={handleOpenAddModal}>

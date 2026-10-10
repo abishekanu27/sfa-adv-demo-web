@@ -36,13 +36,16 @@ import {
   RotateCcw,
   Wallet,
   ArrowLeftRight,
-  CreditCard
+  CreditCard,
+  Database,
+  Building2
 } from 'lucide-react';
 import { 
   fetchRolesApi, 
   createRoleApi, 
   updateRoleApi, 
-  deleteRoleApi 
+  deleteRoleApi,
+  fetchBranchesApi
 } from '../../services/api';
 import './RoleManagement.css';
 
@@ -97,9 +100,9 @@ export const WEB_MENUS_STRUCTURE = [
     title: 'Sales',
     icon: Truck,
     submenus: [
-      { id: 'sales-vehicles', label: 'Vehicle Adding' },
-      { id: 'sales-routes', label: 'Route Master (Add / Edit Beats & Routes)' },
-      { id: 'sales-mappings', label: 'Salesman & Route Mapping' },
+      { id: 'sales-routes', label: 'Route (Route Management)' },
+      { id: 'sales-mappings', label: 'Route Mapping (Salesman & Route Mapping)' },
+      { id: 'sales-vehicles', label: 'Vehicle Management' },
       { id: 'sales-stock-adding', label: 'Stock Adding' },
       { id: 'sales-stock-requests', label: 'Stock Requests (Van Requisitions)' },
       { id: 'sales-v2v-transfers', label: 'Van to Van Stock Transfers' },
@@ -153,7 +156,8 @@ export const WEB_MENUS_STRUCTURE = [
     icon: Settings,
     submenus: [
       { id: 'settings-company', label: 'Company Profile & Branding' },
-      { id: 'settings-templates', label: 'GST & Invoice Print Templates' }
+      { id: 'settings-templates', label: 'GST & Invoice Print Templates' },
+      { id: 'settings-branches', label: 'Branch Management' }
     ]
   }
 ];
@@ -185,6 +189,7 @@ export const MOBILE_SALESMAN_FEATURES = [
 
 export const RoleManagement = () => {
   const [roles, setRoles] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
@@ -196,6 +201,7 @@ export const RoleManagement = () => {
     role_name: '',
     role_code: '',
     description: '',
+    branch_id: '',
     allowed_modules: []
   });
 
@@ -207,8 +213,12 @@ export const RoleManagement = () => {
   const loadRoles = async () => {
     try {
       setLoading(true);
-      const data = await fetchRolesApi();
-      setRoles(data);
+      const [rData, bData] = await Promise.all([
+        fetchRolesApi(),
+        fetchBranchesApi()
+      ]);
+      setRoles(rData);
+      setBranches(bData || []);
     } catch (err) {
       showToast(err.message || 'Failed to load roles', 'error');
     } finally {
@@ -218,6 +228,12 @@ export const RoleManagement = () => {
 
   useEffect(() => {
     loadRoles();
+
+    const handleBranchesUpdated = () => {
+      fetchBranchesApi().then(b => setBranches(b || [])).catch(() => {});
+    };
+    window.addEventListener('branchesUpdated', handleBranchesUpdated);
+    return () => window.removeEventListener('branchesUpdated', handleBranchesUpdated);
   }, []);
 
   const openCreateModal = () => {
@@ -227,6 +243,7 @@ export const RoleManagement = () => {
       role_name: '',
       role_code: '',
       description: '',
+      branch_id: '',
       allowed_modules: [
         'dashboard',
         'products-list',
@@ -257,6 +274,7 @@ export const RoleManagement = () => {
       role_name: role.role_name,
       role_code: role.role_code,
       description: role.description || '',
+      branch_id: role.branch_id ? String(role.branch_id) : '',
       allowed_modules: normalized
     });
     setIsModalOpen(true);
@@ -349,6 +367,7 @@ export const RoleManagement = () => {
 
     const payload = {
       ...formData,
+      branch_id: formData.branch_id ? parseInt(formData.branch_id, 10) : null,
       channel_type: channelType,
       can_login_web: channelType === 'WEB',
       can_login_mobile: channelType === 'MOBILE'
@@ -523,6 +542,11 @@ export const RoleManagement = () => {
                   {role.is_system && (
                     <span className="pill-system-tag">System</span>
                   )}
+                  {role.branch_name ? (
+                    <span className="pill-branch-tag" style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '6px', fontSize: '11px', padding: '3px 7px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
+                      <Building2 size={11} /> {role.branch_name}
+                    </span>
+                  ) : null}
                   {isMobile ? (
                     <span className="pill-mobile-only" title="Restricted to Mobile Application only. Web Login Blocked.">
                       <Smartphone size={13} /> Mobile Only
@@ -683,14 +707,32 @@ export const RoleManagement = () => {
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label>Role Description</label>
-                  <textarea 
-                    rows="2"
-                    placeholder="Provide details about the responsibilities, clearance, and operational scope for this role..."
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  />
+                <div className="form-grid-2">
+                  <div className="form-group">
+                    <label>Role Description</label>
+                    <textarea 
+                      rows="2"
+                      placeholder="Provide details about the responsibilities, clearance, and operational scope for this role..."
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Assigned Branch Scope</label>
+                    <select
+                      value={String(formData.branch_id || '')}
+                      onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
+                    >
+                      <option value="">All Branches (Enterprise Global Role)</option>
+                      {branches.map(b => (
+                        <option key={b.branch_id} value={String(b.branch_id)}>
+                          {b.branch_code} - {b.branch_name} ({b.district || b.city || 'Kerala'})
+                        </option>
+                      ))}
+                    </select>
+                    <span className="field-hint">Optionally restrict this role to a specific branch</span>
+                  </div>
                 </div>
 
                 {/* 2. Channel Selection: Mutually Exclusive Web Only vs Mobile Only */}

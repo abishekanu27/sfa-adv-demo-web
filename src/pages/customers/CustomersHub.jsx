@@ -13,7 +13,8 @@ export const CustomersHub = ({
   companySettings,
   preselectedCustomerId,
   onGoToPriceGroups,
-  user
+  user,
+  selectedBranchId
 }) => {
   const currentUser = user || getUserFromStorage();
 
@@ -87,6 +88,7 @@ export const CustomersHub = ({
               setInternalCreditCustomerId(custId);
               handleTabClick('customers-credit-notes');
             }}
+            selectedBranchId={selectedBranchId}
           />
         )}
 
@@ -98,7 +100,7 @@ export const CustomersHub = ({
         )}
 
         {activeTab === 'customers-advance-booking' && (
-          <AdvancedBooking />
+          <AdvancedBooking selectedBranchId={selectedBranchId} user={currentUser} />
         )}
 
         {activeTab === 'customers-credit-notes' && (

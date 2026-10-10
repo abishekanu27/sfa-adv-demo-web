@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   CreditCard,
   Building,
+  Building2,
   Download,
   UploadCloud,
   FileSpreadsheet,
@@ -33,7 +34,8 @@ import {
   deleteCustomerApi,
   updateCustomerPriceGroupApi,
   fetchPriceGroupsApi,
-  bulkImportCustomersApi
+  bulkImportCustomersApi,
+  fetchBranchesApi
 } from '../../services/api';
 import {
   getKeralaDistricts,
@@ -41,7 +43,7 @@ import {
 } from '../../data/locationData';
 import './CustomerDetails.css';
 
-export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
+export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selectedBranchId }) => {
   const [customers, setCustomers] = useState([]);
   const [metrics, setMetrics] = useState({
     total_customers: 0,
@@ -55,6 +57,23 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
     non_gst_outstanding: 0
   });
   const [priceGroups, setPriceGroups] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [selectedBranchFilter, setSelectedBranchFilter] = useState(() => {
+    try {
+      const activeSessionBranch = localStorage.getItem('sf_nexus_active_branch');
+      if (activeSessionBranch && activeSessionBranch !== 'all' && activeSessionBranch !== 'ALL') {
+        return activeSessionBranch;
+      }
+      const raw = localStorage.getItem('salesforce_user');
+      if (raw) {
+        const u = JSON.parse(raw);
+        if (u?.branch_id && (u.role !== 'ADMIN' && u.role_code !== 'ADMIN')) {
+          return String(u.branch_id);
+        }
+      }
+    } catch (e) {}
+    return 'all';
+  });
   const [selectedGroupFilter, setSelectedGroupFilter] = useState('all');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('all');
   const [taxFilter, setTaxFilter] = useState('all'); // 'all' | 'gst' | 'non_gst'
@@ -74,6 +93,45 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
   const [isCustomArea, setIsCustomArea] = useState(false);
   const [taxType, setTaxType] = useState('GST'); // 'GST' | 'NON_GST'
 
+  // Helper to detect logged-in web user's active branch
+  const getLoggedInUserBranch = (branchList = []) => {
+    try {
+      // 1. Session active branch in header switcher if selected
+      const activeSessionBranch = localStorage.getItem('sf_nexus_active_branch');
+      if (activeSessionBranch && activeSessionBranch !== 'all' && activeSessionBranch !== 'ALL') {
+        const match = branchList.find(b => String(b.branch_id) === String(activeSessionBranch));
+        if (match) return match;
+      }
+      // 2. User profile stored in local storage
+      const raw = localStorage.getItem('salesforce_user');
+      if (raw) {
+        const u = JSON.parse(raw);
+        if (u?.branch_id && String(u.branch_id) !== 'all') {
+          const match = branchList.find(b => String(b.branch_id) === String(u.branch_id));
+          if (match) return match;
+        }
+        if (u?.branch_name) {
+          const match = branchList.find(b => b.branch_name && b.branch_name.toLowerCase().trim() === u.branch_name.toLowerCase().trim());
+          if (match) return match;
+        }
+      }
+    } catch (e) {
+      console.warn('Error detecting logged in branch:', e);
+    }
+    return branchList[0] || null;
+  };
+
+  // Sync with global header branch switcher
+  useEffect(() => {
+    const handleActiveBranchChanged = (e) => {
+      if (e?.detail) {
+        setSelectedBranchFilter(e.detail);
+      }
+    };
+    window.addEventListener('activeBranchChanged', handleActiveBranchChanged);
+    return () => window.removeEventListener('activeBranchChanged', handleActiveBranchChanged);
+  }, []);
+
   // Customer Form
   const [formData, setFormData] = useState({
     customer_code: '',
@@ -81,6 +139,8 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
     contact_person: '',
     phone: '',
     email: '',
+    branch_id: '',
+    branch_name: '',
     state: 'Kerala',
     district: 'Ernakulam',
     local_area: 'Broadway Wholesale Market',
@@ -120,6 +180,25 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
 
   const composePlace = (area, dist) => {
     return [area, dist, 'Kerala'].filter(Boolean).join(', ');
+  };
+
+  const handleBranchChange = (branchId) => {
+    const selectedBr = branches.find(b => String(b.branch_id) === String(branchId));
+    const brName = selectedBr ? selectedBr.branch_name : '';
+    const newDistrict = selectedBr?.district || formData.district || 'Ernakulam';
+    const areas = getLocalAreasForKeralaDistrict(newDistrict);
+    const defaultArea = areas[0] || '';
+
+    setFormData(prev => ({
+      ...prev,
+      branch_id: branchId ? Number(branchId) : '',
+      branch_name: brName,
+      district: newDistrict,
+      local_area: defaultArea,
+      place: composePlace(defaultArea, newDistrict),
+      route_area: defaultArea ? `${defaultArea} Beat (${newDistrict})` : ''
+    }));
+    setIsCustomArea(false);
   };
 
   const handleDistrictChange = (selectedDistrict) => {
@@ -167,14 +246,16 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [custList, custMetrics, pgs] = await Promise.all([
-        fetchCustomersApi(searchQuery, selectedGroupFilter, selectedStatusFilter, taxFilter),
-        fetchCustomerMetricsApi(),
-        fetchPriceGroupsApi()
+      const [custList, custMetrics, pgs, brList] = await Promise.all([
+        fetchCustomersApi(searchQuery, selectedGroupFilter, selectedStatusFilter, taxFilter, selectedBranchFilter),
+        fetchCustomerMetricsApi(selectedBranchFilter),
+        fetchPriceGroupsApi(),
+        fetchBranchesApi({ status: 'Active' })
       ]);
       setCustomers(custList);
       setMetrics(custMetrics);
       setPriceGroups(pgs);
+      setBranches(brList || []);
     } catch (err) {
       console.error('Error loading customer data:', err);
     } finally {
@@ -183,8 +264,25 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
   };
 
   useEffect(() => {
+    if (selectedBranchId !== undefined && selectedBranchId !== null) {
+      setSelectedBranchFilter(String(selectedBranchId));
+    }
+  }, [selectedBranchId]);
+
+  useEffect(() => {
+    const handleActiveBranchChanged = (e) => {
+      const bId = e?.detail?.branchId;
+      if (bId !== undefined && bId !== null) {
+        setSelectedBranchFilter(String(bId));
+      }
+    };
+    window.addEventListener('activeBranchChanged', handleActiveBranchChanged);
+    return () => window.removeEventListener('activeBranchChanged', handleActiveBranchChanged);
+  }, []);
+
+  useEffect(() => {
     loadData();
-  }, [searchQuery, selectedGroupFilter, selectedStatusFilter, taxFilter]);
+  }, [searchQuery, selectedGroupFilter, selectedStatusFilter, taxFilter, selectedBranchFilter]);
 
   const showNotification = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -194,7 +292,8 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
   // Open Add Modal
   const handleOpenAddModal = () => {
     setEditingCustomer(null);
-    const defaultDistrict = 'Ernakulam';
+    const defaultBranch = getLoggedInUserBranch(branches);
+    const defaultDistrict = defaultBranch?.district || 'Ernakulam';
     const areas = getLocalAreasForKeralaDistrict(defaultDistrict);
     const defaultArea = areas[0] || 'Broadway Wholesale Market';
     setTaxType(taxFilter === 'non_gst' ? 'NON_GST' : 'GST');
@@ -219,6 +318,8 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
       contact_person: '',
       phone: '',
       email: '',
+      branch_id: defaultBranch ? defaultBranch.branch_id : '',
+      branch_name: defaultBranch ? defaultBranch.branch_name : '',
       state: 'Kerala',
       district: defaultDistrict,
       local_area: defaultArea,
@@ -245,11 +346,35 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
     }).catch(() => {});
   };
 
+  // Auto-select logged-in user branch when branches load while Add modal is open
+  useEffect(() => {
+    if (showCustomerModal && !editingCustomer && !formData.branch_id && branches.length > 0) {
+      const activeBr = getLoggedInUserBranch(branches);
+      if (activeBr) {
+        const newDist = activeBr.district || formData.district || 'Ernakulam';
+        const areas = getLocalAreasForKeralaDistrict(newDist);
+        const defaultArea = areas[0] || formData.local_area;
+        setFormData(prev => ({
+          ...prev,
+          branch_id: activeBr.branch_id,
+          branch_name: activeBr.branch_name,
+          district: newDist,
+          local_area: defaultArea,
+          place: composePlace(defaultArea, newDist),
+          route_area: `${defaultArea} Beat (${newDist})`
+        }));
+      }
+    }
+  }, [branches, showCustomerModal, editingCustomer]);
+
   // Open Edit Modal
   const handleOpenEditModal = (c, e) => {
     if (e) e.stopPropagation();
     setEditingCustomer(c);
-    const distVal = c.district || 'Ernakulam';
+    const loggedInBranch = getLoggedInUserBranch(branches);
+    const activeBranchId = c.branch_id || (loggedInBranch ? loggedInBranch.branch_id : (branches[0]?.branch_id || ''));
+    const matchedBranch = branches.find(b => String(b.branch_id) === String(activeBranchId)) || loggedInBranch || branches[0] || null;
+    const distVal = c.district || matchedBranch?.district || 'Ernakulam';
     const areaVal = c.local_area || (c.place ? c.place.split(',')[0].trim() : '');
     const districtAreas = getLocalAreasForKeralaDistrict(distVal);
     const isCustom = Boolean(areaVal && !districtAreas.includes(areaVal));
@@ -262,6 +387,8 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
       contact_person: c.contact_person || '',
       phone: c.phone || '',
       email: c.email || '',
+      branch_id: matchedBranch ? matchedBranch.branch_id : '',
+      branch_name: matchedBranch ? matchedBranch.branch_name : '',
       state: 'Kerala',
       district: distVal,
       local_area: areaVal,
@@ -368,6 +495,7 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
       const rows = customers.map((c) => ({
         'Customer Code': c.customer_code || `CUST-${c.id}`,
         'Customer / Business Name': c.name,
+        'Branch': c.branch_name || 'Central Branch',
         'Contact Person': c.contact_person || '',
         'Phone': c.phone || '',
         'Email': c.email || '',
@@ -793,6 +921,22 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
 
         <div className="status-filter-select-wrap">
           <select 
+            value={selectedBranchFilter}
+            onChange={(e) => setSelectedBranchFilter(e.target.value)}
+            className="filter-status-select"
+            style={{ borderColor: '#2563eb', fontWeight: 600, color: '#1d4ed8' }}
+          >
+            <option value="all">🏢 All Operating Branches</option>
+            {branches.map(b => (
+              <option key={b.branch_id} value={b.branch_id}>
+                🏢 {b.branch_name} ({b.branch_code})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="status-filter-select-wrap">
+          <select 
             value={selectedStatusFilter}
             onChange={(e) => setSelectedStatusFilter(e.target.value)}
             className="filter-status-select"
@@ -812,6 +956,7 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
               <tr>
                 <th style={{ width: '85px' }}>Code</th>
                 <th style={{ minWidth: '180px' }}>Customer / Store Name</th>
+                <th style={{ minWidth: '140px' }}>Branch</th>
                 <th style={{ minWidth: '175px' }}>Contact Details</th>
                 <th style={{ minWidth: '175px' }}>Place & Route</th>
                 <th style={{ width: '135px' }}>GST IN</th>
@@ -825,13 +970,13 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="10" className="empty-table-cell">
+                  <td colSpan="11" className="empty-table-cell">
                     Loading customer accounts from database...
                   </td>
                 </tr>
               ) : customers.length === 0 ? (
                 <tr>
-                  <td colSpan="10" className="empty-table-cell">
+                  <td colSpan="11" className="empty-table-cell">
                     <div className="empty-state-box">
                       <Users size={38} className="empty-icon" />
                       <h4>No Customers Found</h4>
@@ -860,6 +1005,24 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
                             Prop: {c.contact_person}
                           </small>
                         )}
+                      </td>
+                      <td className="branch-rep-cell">
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          background: '#eff6ff',
+                          color: '#1d4ed8',
+                          border: '1px solid #bfdbfe',
+                          width: 'fit-content'
+                        }}>
+                          <Building2 size={12} />
+                          {c.branch_name || 'Central Branch'}
+                        </span>
                       </td>
                       <td className="contact-cell">
                         <div className="contact-cell-inner">
@@ -1174,6 +1337,35 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote }) => {
                           : 'Retail invoice will be generated without input tax credit'}
                       </small>
                     </div>
+                  </div>
+                </div>
+
+                {/* Branch Assignment */}
+                <div className="location-hierarchy-box" style={{ background: '#f0fdf4', borderColor: '#bbf7d0', marginBottom: '16px' }}>
+                  <div className="box-header-row">
+                    <Building2 size={16} className="text-emerald-700" />
+                    <strong style={{ color: '#166534' }}>Branch Assignment *</strong>
+                  </div>
+                  <p className="box-desc" style={{ color: '#15803d' }}>
+                    Assign this customer to an operating branch. The district and commercial beat hierarchy automatically adapt to the selected branch depot.
+                  </p>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label style={{ fontWeight: 600 }}>Operating Branch *</label>
+                    <select 
+                      value={formData.branch_id || ''}
+                      required
+                      onChange={(e) => handleBranchChange(e.target.value)}
+                      className="location-select"
+                      style={{ borderColor: '#86efac' }}
+                    >
+                      <option value="">-- Select Operating Branch --</option>
+                      {branches.map(b => (
+                        <option key={b.branch_id} value={b.branch_id}>
+                          {b.branch_name} ({b.branch_code}) - {b.district || 'Kerala'}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 

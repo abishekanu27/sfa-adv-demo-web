@@ -23,7 +23,7 @@ import { exportDashboardToExcel } from '../services/excelExport';
 import { PageLoader } from '../components/PageLoader';
 import './DashboardPreview.css';
 
-export const DashboardPreview = ({ user, onLogout, isEmbedded = false }) => {
+export const DashboardPreview = ({ user, onLogout, isEmbedded = false, selectedBranchId }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -96,9 +96,10 @@ export const DashboardPreview = ({ user, onLogout, isEmbedded = false }) => {
     fieldRepresentatives: []
   });
 
-  const loadData = () => {
+  const loadData = (branchOverride) => {
     setIsLoading(true);
-    fetchDashboardData(user?.email)
+    const branchToFetch = branchOverride !== undefined ? branchOverride : (selectedBranchId || localStorage.getItem('active_branch_id') || 'all');
+    fetchDashboardData(user?.email, branchToFetch)
       .then(data => {
         if (data) {
           setDashboardData(prev => ({
@@ -123,7 +124,18 @@ export const DashboardPreview = ({ user, onLogout, isEmbedded = false }) => {
   };
 
   useEffect(() => {
-    loadData();
+    loadData(selectedBranchId);
+  }, [user, selectedBranchId]);
+
+  useEffect(() => {
+    const handleBranchChange = (e) => {
+      const newBranchId = e?.detail?.branch_id || localStorage.getItem('active_branch_id') || 'all';
+      loadData(newBranchId);
+    };
+    window.addEventListener('activeBranchChanged', handleBranchChange);
+    return () => {
+      window.removeEventListener('activeBranchChanged', handleBranchChange);
+    };
   }, [user]);
 
   const showToast = (msg, type = 'success') => {

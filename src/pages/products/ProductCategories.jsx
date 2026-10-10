@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ChevronRight, X, Tag, LayoutGrid, List } from 'lucide-react';
-import { fetchCategoriesApi, createCategoryApi } from '../../services/api';
+import { Plus, ChevronRight, X, Tag, LayoutGrid, List, Trash2, AlertTriangle } from 'lucide-react';
+import { fetchCategoriesApi, createCategoryApi, deleteCategoryApi } from '../../services/api';
 import './ProductCategories.css';
 
 export const ProductCategories = ({ onSelectCategory }) => {
@@ -8,6 +8,8 @@ export const ProductCategories = ({ onSelectCategory }) => {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newCatName, setNewCatName] = useState('');
+  const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
@@ -43,6 +45,28 @@ export const ProductCategories = ({ onSelectCategory }) => {
       showNotification(err.message || 'Failed to create category', 'error');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenDeleteModal = (cat, e) => {
+    if (e) e.stopPropagation();
+    setCategoryToDelete(cat);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!categoryToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      const catId = categoryToDelete.category_id || categoryToDelete.id;
+      await deleteCategoryApi(catId);
+      showNotification(`Category "${categoryToDelete.name}" deleted successfully!`);
+      setCategoryToDelete(null);
+      await loadCategories();
+    } catch (err) {
+      showNotification(err.message || 'Failed to delete category', 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -130,13 +154,24 @@ export const ProductCategories = ({ onSelectCategory }) => {
 
               <div className="card-bottom-divider"></div>
 
-              <button 
-                className="browse-products-link"
-                onClick={() => onSelectCategory && onSelectCategory(cat.name)}
-              >
-                <span>Browse Products</span>
-                <ChevronRight size={14} />
-              </button>
+              <div className="card-bottom-actions-row">
+                <button 
+                  className="browse-products-link"
+                  onClick={() => onSelectCategory && onSelectCategory(cat.name)}
+                >
+                  <span>Browse Products</span>
+                  <ChevronRight size={14} />
+                </button>
+                <button
+                  type="button"
+                  className="cat-delete-btn"
+                  title={`Delete category "${cat.name}"`}
+                  onClick={(e) => handleOpenDeleteModal(cat, e)}
+                >
+                  <Trash2 size={13} />
+                  <span>Delete</span>
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -151,7 +186,7 @@ export const ProductCategories = ({ onSelectCategory }) => {
                   <th>Description</th>
                   <th>Total Products</th>
                   <th>Status</th>
-                  <th>Action</th>
+                  <th style={{ width: '180px', textAlign: 'right' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -177,13 +212,24 @@ export const ProductCategories = ({ onSelectCategory }) => {
                       </span>
                     </td>
                     <td>
-                      <button 
-                        className="browse-products-link"
-                        onClick={() => onSelectCategory && onSelectCategory(cat.name)}
-                      >
-                        <span>Browse Products</span>
-                        <ChevronRight size={14} />
-                      </button>
+                      <div className="cat-table-actions-cell">
+                        <button 
+                          className="browse-products-link"
+                          onClick={() => onSelectCategory && onSelectCategory(cat.name)}
+                        >
+                          <span>Browse</span>
+                          <ChevronRight size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          className="cat-table-delete-btn"
+                          title={`Delete category "${cat.name}"`}
+                          onClick={(e) => handleOpenDeleteModal(cat, e)}
+                        >
+                          <Trash2 size={13} />
+                          <span>Delete</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -241,6 +287,54 @@ export const ProductCategories = ({ onSelectCategory }) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Delete Category Confirmation */}
+      {categoryToDelete && (
+        <div className="modal-backdrop" onClick={() => !isDeleting && setCategoryToDelete(null)}>
+          <div className="modal-dialog delete-category-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="delete-modal-content">
+              <div className="delete-warning-icon-wrapper">
+                <AlertTriangle size={28} />
+              </div>
+
+              <h3 className="delete-modal-title">Delete Product Category</h3>
+              <p className="delete-modal-desc">
+                Are you sure you want to delete category <strong>"{categoryToDelete.name}"</strong>?
+              </p>
+
+              {Number(categoryToDelete.product_count) > 0 ? (
+                <div className="delete-warning-notice-box">
+                  <strong>⚠️ {categoryToDelete.product_count} Linked Products:</strong> Deleting this category will unassign it from these products. The products will remain intact in your inventory.
+                </div>
+              ) : (
+                <div className="delete-warning-notice-box" style={{ background: '#f8fafc', borderColor: '#e2e8f0', color: '#475569' }}>
+                  This category has no linked products. It will be permanently removed from your catalog hierarchy.
+                </div>
+              )}
+
+              <div className="delete-modal-actions-row">
+                <button 
+                  type="button" 
+                  className="btn-cancel"
+                  disabled={isDeleting}
+                  onClick={() => setCategoryToDelete(null)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-delete-confirm"
+                  disabled={isDeleting}
+                  onClick={handleConfirmDelete}
+                >
+                  <Trash2 size={14} />
+                  <span>{isDeleting ? 'Deleting...' : 'Yes, Delete Category'}</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

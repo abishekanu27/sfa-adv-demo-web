@@ -12,20 +12,25 @@ import {
   User,
   Phone,
   Maximize2,
-  Boxes
+  Boxes,
+  Building2,
+  Filter
 } from 'lucide-react';
 import {
   fetchWarehousesApi,
   createWarehouseApi,
   updateWarehouseApi,
-  deleteWarehouseApi
+  deleteWarehouseApi,
+  fetchBranchesApi
 } from '../../services/api';
 import './WarehouseDetails.css';
 
 export const WarehouseDetails = () => {
   const [warehouses, setWarehouses] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [branchFilter, setBranchFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
   const [editingWh, setEditingWh] = useState(null);
   const [toast, setToast] = useState(null);
@@ -33,6 +38,7 @@ export const WarehouseDetails = () => {
   const [formData, setFormData] = useState({
     code: '',
     name: '',
+    branch_id: '',
     location: '',
     manager_name: '',
     phone: '',
@@ -45,10 +51,19 @@ export const WarehouseDetails = () => {
     setTimeout(() => setToast(null), 3500);
   };
 
+  const loadBranches = async () => {
+    try {
+      const bList = await fetchBranchesApi();
+      setBranches(bList || []);
+    } catch (e) {
+      console.warn('Failed to load branches:', e);
+    }
+  };
+
   const loadWarehouses = async () => {
     setLoading(true);
     try {
-      const data = await fetchWarehousesApi(searchQuery);
+      const data = await fetchWarehousesApi(searchQuery, branchFilter);
       setWarehouses(data);
     } catch (err) {
       console.error(err);
@@ -59,14 +74,19 @@ export const WarehouseDetails = () => {
   };
 
   useEffect(() => {
+    loadBranches();
+  }, []);
+
+  useEffect(() => {
     loadWarehouses();
-  }, [searchQuery]);
+  }, [searchQuery, branchFilter]);
 
   const handleOpenAdd = () => {
     setEditingWh(null);
     setFormData({
       code: '',
       name: '',
+      branch_id: branches[0]?.branch_id || '1',
       location: '',
       manager_name: '',
       phone: '',
@@ -81,6 +101,7 @@ export const WarehouseDetails = () => {
     setFormData({
       code: wh.code,
       name: wh.name,
+      branch_id: wh.branch_id || branches[0]?.branch_id || '1',
       location: wh.location,
       manager_name: wh.manager_name || '',
       phone: wh.phone || '',
@@ -183,6 +204,22 @@ export const WarehouseDetails = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f8fafc', padding: '6px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+          <Building2 size={14} color="#64748b" />
+          <select 
+            value={branchFilter} 
+            onChange={(e) => setBranchFilter(e.target.value)}
+            style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '13px', fontWeight: '500', color: '#334155', cursor: 'pointer' }}
+          >
+            <option value="all">All Branches</option>
+            {branches.map(b => (
+              <option key={b.branch_id} value={b.branch_id}>
+                {b.branch_code} - {b.branch_name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Warehouses Table */}
@@ -199,6 +236,7 @@ export const WarehouseDetails = () => {
               <tr>
                 <th>Code</th>
                 <th>Warehouse Name</th>
+                <th>Branch</th>
                 <th>Location / Address</th>
                 <th>Manager</th>
                 <th>Contact</th>
@@ -216,6 +254,12 @@ export const WarehouseDetails = () => {
                   </td>
                   <td>
                     <strong>{wh.name}</strong>
+                  </td>
+                  <td>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '600', color: '#166534', background: '#f0fdf4', padding: '3px 8px', borderRadius: '4px', border: '1px solid #bbf7d0' }}>
+                      <Building2 size={12} />
+                      {wh.branch_name || branches.find(b => b.branch_id === wh.branch_id)?.branch_name || 'Main Branch'}
+                    </span>
                   </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}>
@@ -284,6 +328,24 @@ export const WarehouseDetails = () => {
 
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
+                {/* Mandatory Branch Field */}
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label>Assigned Branch *</label>
+                  <select
+                    className="form-select"
+                    required
+                    value={formData.branch_id}
+                    onChange={(e) => setFormData(prev => ({ ...prev, branch_id: e.target.value }))}
+                  >
+                    <option value="">Select Branch</option>
+                    {branches.map(b => (
+                      <option key={b.branch_id} value={b.branch_id}>
+                        {b.branch_code} - {b.branch_name} ({b.city})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="form-grid-2">
                   <div className="form-group">
                     <label>Warehouse Code</label>

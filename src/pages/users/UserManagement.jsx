@@ -19,7 +19,8 @@ import {
   UserCheck, 
   RefreshCw,
   Eye,
-  EyeOff
+  EyeOff,
+  Building2
 } from 'lucide-react';
 import { 
   fetchUsersApi, 
@@ -27,17 +28,24 @@ import {
   updateUserApi, 
   toggleUserStatusApi, 
   deleteUserApi, 
-  fetchRolesApi 
+  fetchRolesApi,
+  fetchBranchesApi
 } from '../../services/api';
+import { getUserFromStorage, isUserAdmin } from '../../utils/permissions';
 import './UserManagement.css';
 
 export const UserManagement = () => {
+  const currentUser = getUserFromStorage();
+  const isAdmin = isUserAdmin(currentUser);
+
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRoleFilter, setSelectedRoleFilter] = useState('ALL');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('ALL');
+  const [branchFilter, setBranchFilter] = useState('ALL');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -58,6 +66,8 @@ export const UserManagement = () => {
     confirm_password: '',
     role_id: '',
     department: '',
+    branch_id: '',
+    all_branches_access: false,
     status: 'ACTIVE'
   });
 
@@ -69,17 +79,23 @@ export const UserManagement = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [uData, rData] = await Promise.all([
+      const [uData, rData, bData] = await Promise.all([
         fetchUsersApi(),
-        fetchRolesApi()
+        fetchRolesApi(),
+        fetchBranchesApi()
       ]);
       setUsers(uData);
       setRoles(rData);
+      setBranches(bData || []);
 
       // Default role to Salesman or first role if not set
       if (rData.length > 0 && !formData.role_id) {
         const salesRole = rData.find(r => r.role_code === 'SALESMAN') || rData[0];
-        setFormData(prev => ({ ...prev, role_id: salesRole.role_id }));
+        setFormData(prev => ({ 
+          ...prev, 
+          role_id: salesRole.role_id,
+          branch_id: bData?.[0]?.branch_id || '1'
+        }));
       }
     } catch (err) {
       showToast(err.message || 'Failed to load users', 'error');
@@ -90,6 +106,12 @@ export const UserManagement = () => {
 
   useEffect(() => {
     loadData();
+
+    const handleBranchesUpdated = () => {
+      fetchBranchesApi().then(b => setBranches(b || [])).catch(() => {});
+    };
+    window.addEventListener('branchesUpdated', handleBranchesUpdated);
+    return () => window.removeEventListener('branchesUpdated', handleBranchesUpdated);
   }, []);
 
   const getDefaultDepartmentForRole = (role) => {
@@ -117,6 +139,10 @@ export const UserManagement = () => {
 
   const openCreateModal = () => {
     const defaultRole = roles.find(r => r.role_code === 'SALESMAN') || roles[0];
+    const isSuperRole = isAdmin && (defaultRole?.role_code === 'ADMIN');
+    const defaultBranchId = (!isAdmin && currentUser?.branch_id)
+      ? String(currentUser.branch_id)
+      : (branches[0]?.branch_id ? String(branches[0].branch_id) : '1');
     setEditingUser(null);
     setShowPassword(false);
     setShowConfirmPassword(false);
@@ -129,6 +155,8 @@ export const UserManagement = () => {
       confirm_password: '',
       role_id: defaultRole ? defaultRole.role_id : '',
       department: getDefaultDepartmentForRole(defaultRole),
+      branch_id: defaultBranchId,
+      all_branches_access: isSuperRole,
       status: 'ACTIVE'
     });
     setIsModalOpen(true);
@@ -138,6 +166,8 @@ export const UserManagement = () => {
     setEditingUser(user);
     setShowPassword(false);
     setShowConfirmPassword(false);
+    const hasAllBranches = user.role_code === 'ADMIN' || 
+      (Array.isArray(user.assigned_branches) && user.assigned_branches.includes('all'));
     setFormData({
       name: user.name || '',
       username: user.username || '',
@@ -147,6 +177,8 @@ export const UserManagement = () => {
       confirm_password: user.password || '',
       role_id: user.role_id || '',
       department: user.department || '',
+      branch_id: user.branch_id ? String(user.branch_id) : (branches[0]?.branch_id ? String(branches[0].branch_id) : '1'),
+      all_branches_access: hasAllBranches,
       status: user.status || 'ACTIVE'
     });
     setIsModalOpen(true);
@@ -170,7 +202,13 @@ export const UserManagement = () => {
         dept = getDefaultDepartmentForRole(selected);
       }
     }
-    setFormData(prev => ({ ...prev, role_id: roleId, department: dept }));
+    const isSuperRole = isAdmin && (selected?.role_code === 'ADMIN');
+    setFormData(prev => ({ 
+      ...prev, 
+      role_id: roleId, 
+      department: dept,
+      all_branches_access: isSuperRole ? true : (isAdmin ? prev.all_branches_access : false)
+    }));
   };
 
   const handleSaveUser = async (e) => {
@@ -192,11 +230,41 @@ export const UserManagement = () => {
     }
 
     try {
+      const selectedBranchId = parseInt(formData.branch_id, 10) || 1;
+      let finalAssignedBranches;
+      let finalAllBranchesAccess;
+
+      if (isAdmin) {
+        finalAllBranchesAccess = Boolean(formData.all_branches_access);
+        finalAssignedBranches = finalAllBranchesAccess ? ['all'] : [selectedBranchId];
+      } else {
+        // Non-admin cannot modify or grant cross-branch access
+        if (editingUser) {
+          // Preserve existing branch assignments on edit
+          finalAssignedBranches = editingUser.assigned_branches || [selectedBranchId];
+          finalAllBranchesAccess = Boolean(
+            editingUser.role_code === 'ADMIN' || 
+            (Array.isArray(editingUser.assigned_branches) && editingUser.assigned_branches.includes('all'))
+          );
+        } else {
+          // Creating user: strictly assigned to their single branch
+          finalAssignedBranches = [selectedBranchId];
+          finalAllBranchesAccess = false;
+        }
+      }
+
+      const payload = {
+        ...formData,
+        branch_id: selectedBranchId,
+        all_branches_access: finalAllBranchesAccess,
+        assigned_branches: finalAssignedBranches
+      };
+
       if (editingUser) {
-        const res = await updateUserApi(editingUser.id, formData);
+        const res = await updateUserApi(editingUser.id, payload);
         showToast(res.message || 'User updated successfully.');
       } else {
-        const res = await createUserApi(formData);
+        const res = await createUserApi(payload);
         showToast(res.message || 'User created successfully. User is now available in Sales module!');
       }
       setIsModalOpen(false);
@@ -244,8 +312,11 @@ export const UserManagement = () => {
 
     const matchesRole = selectedRoleFilter === 'ALL' || u.role_code === selectedRoleFilter || u.role_id === selectedRoleFilter;
     const matchesStatus = selectedStatusFilter === 'ALL' || u.status === selectedStatusFilter;
+    const matchesBranch = branchFilter === 'ALL' || 
+      String(u.branch_id) === String(branchFilter) ||
+      (Array.isArray(u.assigned_branches) && u.assigned_branches.includes('all'));
 
-    return matchesSearch && matchesRole && matchesStatus;
+    return matchesSearch && matchesRole && matchesStatus && matchesBranch;
   });
 
   // Metrics
@@ -366,6 +437,22 @@ export const UserManagement = () => {
           </div>
 
           <div className="filter-select-wrap">
+            <Building2 size={14} className="filter-icon" />
+            <select 
+              value={branchFilter}
+              onChange={(e) => setBranchFilter(e.target.value)}
+              className="filter-select"
+            >
+              <option value="ALL">All Branches</option>
+              {branches.map(b => (
+                <option key={b.branch_id} value={b.branch_id}>
+                  {b.branch_code} - {b.branch_name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-select-wrap">
             <select 
               value={selectedStatusFilter}
               onChange={(e) => setSelectedStatusFilter(e.target.value)}
@@ -387,6 +474,7 @@ export const UserManagement = () => {
               <tr>
                 <th>User Details</th>
                 <th>Contact Information</th>
+                <th>Branch Assignment</th>
                 <th>Role & Mapping</th>
                 <th>Access Channel</th>
                 <th>Department</th>
@@ -397,13 +485,13 @@ export const UserManagement = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="7" className="table-empty-state">
+                  <td colSpan="8" className="table-empty-state">
                     <div className="spinner-center">Loading enterprise users...</div>
                   </td>
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="table-empty-state">
+                  <td colSpan="8" className="table-empty-state">
                     <Users size={36} color="#94a3b8" />
                     <p>No users found matching your search or filters.</p>
                   </td>
@@ -412,6 +500,8 @@ export const UserManagement = () => {
                 filteredUsers.map(user => {
                   const isSalesman = user.role_code === 'SALESMAN' || user.role === 'SALES_EXECUTIVE' || user.can_login_web === false;
                   const initial = (user.name || 'U').charAt(0).toUpperCase();
+                  const branchObj = branches.find(b => b.branch_id === user.branch_id);
+                  const hasAllBranches = user.role_code === 'ADMIN' || (Array.isArray(user.assigned_branches) && user.assigned_branches.includes('all'));
 
                   return (
                     <tr key={user.id} className="user-table-row">
@@ -436,6 +526,16 @@ export const UserManagement = () => {
                         <div className="contact-cell-wrap">
                           <span className="contact-email"><Mail size={13} /> {user.email}</span>
                           <span className="contact-phone"><Phone size={13} /> {user.phone || '—'}</span>
+                        </div>
+                      </td>
+
+                      {/* Branch Assignment */}
+                      <td>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '600', color: hasAllBranches ? '#1e40af' : '#166534', background: hasAllBranches ? '#eff6ff' : '#f0fdf4', padding: '3px 8px', borderRadius: '4px', border: `1px solid ${hasAllBranches ? '#bfdbfe' : '#bbf7d0'}` }}>
+                            <Building2 size={12} />
+                            {hasAllBranches ? 'All Branches' : branchObj ? `${branchObj.branch_code} (${branchObj.city})` : (user.branch_name || 'Main Branch')}
+                          </span>
                         </div>
                       </td>
 
@@ -590,7 +690,7 @@ export const UserManagement = () => {
                     onChange={(e) => handleRoleChangeInForm(e.target.value)}
                     required
                   >
-                    {roles.map(r => (
+                    {(isAdmin ? roles : roles.filter(r => r.role_code !== 'ADMIN')).map(r => (
                       <option key={r.role_id} value={r.role_id}>
                         {r.role_name} {r.can_login_web === false ? '(Mobile Only)' : '(Web Only)'}
                       </option>
@@ -615,6 +715,79 @@ export const UserManagement = () => {
                     <option value="Warehouse & Logistics" />
                     <option value="General Administration" />
                   </datalist>
+                </div>
+              </div>
+
+              {/* Branch Assignment */}
+              <div className="form-grid-2">
+                <div className="form-group">
+                  <label>Assigned Branch *</label>
+                  <select 
+                    value={String(formData.branch_id || '')}
+                    onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
+                    required
+                    disabled={!isAdmin && Boolean(editingUser)}
+                  >
+                    <option value="">-- Select Assigned Branch --</option>
+                    {branches.map(b => (
+                      <option key={b.branch_id} value={String(b.branch_id)}>
+                        {b.branch_code} - {b.branch_name} ({b.district || b.city || 'Kerala'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group" style={{ justifyContent: 'center' }}>
+                  <label 
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px', 
+                      cursor: isAdmin ? 'pointer' : 'not-allowed', 
+                      marginTop: '22px',
+                      opacity: isAdmin ? 1 : 0.65,
+                      userSelect: 'none'
+                    }}
+                    title={isAdmin ? "Toggle access across all company branches" : "Only Administrators can modify or grant cross-branch access"}
+                  >
+                    <input 
+                      type="checkbox"
+                      id="authorize-all-branches-checkbox"
+                      checked={Boolean(formData.all_branches_access)}
+                      disabled={!isAdmin}
+                      onChange={(e) => {
+                        if (isAdmin) {
+                          setFormData({ ...formData, all_branches_access: e.target.checked });
+                        }
+                      }}
+                      style={{ cursor: isAdmin ? 'pointer' : 'not-allowed' }}
+                    />
+                    <span style={{ 
+                      fontSize: '13px', 
+                      fontWeight: '600', 
+                      color: isAdmin ? '#1e40af' : '#64748b',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      {!isAdmin && <Lock size={13} style={{ color: '#ef4444' }} />}
+                      Authorize Access Across All Branches
+                      {!isAdmin && (
+                        <span style={{ 
+                          fontSize: '10px', 
+                          fontWeight: '700', 
+                          color: '#dc2626', 
+                          background: '#fee2e2', 
+                          padding: '1px 6px', 
+                          borderRadius: '4px',
+                          letterSpacing: '0.02em',
+                          textTransform: 'uppercase'
+                        }}>
+                          Admin Only
+                        </span>
+                      )}
+                    </span>
+                  </label>
                 </div>
               </div>
 

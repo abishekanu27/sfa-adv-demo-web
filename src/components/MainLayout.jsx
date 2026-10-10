@@ -20,9 +20,9 @@ import { InvoiceManagement } from '../pages/invoices/InvoiceManagement';
 import { DashboardPreview } from '../pages/DashboardPreview';
 import { SettingsPage } from '../pages/settings/SettingsPage';
 import { ReportsHub } from '../pages/reports/ReportsHub';
-import { fetchCompanySettings } from '../services/api';
+import { fetchCompanySettings, fetchBranchesApi } from '../services/api';
 import { exportDashboardToExcel } from '../services/excelExport';
-import { getFirstAccessibleMenu } from '../utils/permissions';
+import { getFirstAccessibleMenu, isUserAdmin } from '../utils/permissions';
 import { TopLoadingBar } from './PageLoader';
 import './MainLayout.css';
 
@@ -58,6 +58,30 @@ export const MainLayout = ({ user, onLogout }) => {
   });
   const [creditNoteCustomerId, setCreditNoteCustomerId] = useState(null);
   const [stockInwardTargetProduct, setStockInwardTargetProduct] = useState(null);
+
+  const isAdmin = isUserAdmin(user);
+  const [branches, setBranches] = useState([]);
+  const [selectedBranchId, setSelectedBranchId] = useState(() => {
+    try {
+      const saved = localStorage.getItem('sf_nexus_active_branch');
+      if (saved) return saved;
+    } catch (e) {}
+    return (user?.role === 'ADMIN' || user?.role_code === 'ADMIN') ? 'all' : (user?.branch_id ? String(user.branch_id) : '1');
+  });
+
+  useEffect(() => {
+    fetchBranchesApi().then(b => {
+      setBranches(b || []);
+    }).catch(e => console.warn('Branches fetch:', e));
+  }, []);
+
+  const handleBranchSwitch = (bId) => {
+    setSelectedBranchId(bId);
+    try {
+      localStorage.setItem('sf_nexus_active_branch', bId);
+      window.dispatchEvent(new CustomEvent('activeBranchChanged', { detail: bId }));
+    } catch (e) {}
+  };
 
   const handleGoToAddStock = (product) => {
     setStockInwardTargetProduct(product);
@@ -215,6 +239,35 @@ export const MainLayout = ({ user, onLogout }) => {
                 ) : null}
               </div>
             </div>
+
+            {/* Branch Switcher or Branch Locked Badge */}
+            <div className="top-nav-branch-selector">
+              {isAdmin || (Array.isArray(user?.assigned_branches) && user.assigned_branches.length > 1) ? (
+                <div className="branch-dropdown-wrapper">
+                  <Building2 size={15} color="#2563eb" />
+                  <select 
+                    value={selectedBranchId} 
+                    onChange={(e) => handleBranchSwitch(e.target.value)}
+                    className="top-nav-branch-select"
+                    title="Switch Branch Filter"
+                  >
+                    <option value="all">All Branches (Consolidated)</option>
+                    {branches.map(b => (
+                      <option key={b.branch_id} value={b.branch_id}>
+                        {b.branch_code} - {b.branch_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="branch-locked-badge" title="Authorized Branch Assignment">
+                  <Building2 size={14} color="#16a34a" />
+                  <span>
+                    {branches.find(b => String(b.branch_id) === String(selectedBranchId))?.branch_name || user?.branch_name || 'Main Branch'}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Right Icons */}
@@ -275,8 +328,11 @@ export const MainLayout = ({ user, onLogout }) => {
               user={user} 
               isEmbedded={true} 
               onLogout={onLogout} 
+              selectedBranchId={selectedBranchId}
             />
           )}
+
+
 
           {/* 1. Products & Stock Hub */}
           {(activeView === 'products-stock' || 
@@ -333,11 +389,13 @@ export const MainLayout = ({ user, onLogout }) => {
               companySettings={companySettings}
               preselectedCustomerId={creditNoteCustomerId}
               onGoToPriceGroups={() => setActiveView('products-price-groups')}
+              selectedBranchId={selectedBranchId}
             />
           )}
 
-          {/* 4. Sales Hub */}
+          {/* 4. Sales Hub (Salesman, Vehicle Management, Route Master, Route Mapping, Operations) */}
           {(activeView === 'sales' || 
+            activeView === 'sales-salesman' ||
             activeView === 'sales-vehicles' || 
             activeView === 'sales-routes' || 
             activeView === 'sales-mappings' || 
@@ -346,12 +404,18 @@ export const MainLayout = ({ user, onLogout }) => {
             activeView === 'sales-v2v-transfers' || 
             activeView === 'sales-live-track' || 
             activeView === 'sales-returns' || 
-            activeView === 'sales-expenses') && (
+            activeView === 'sales-expenses' ||
+            activeView === 'master' ||
+            activeView === 'master-salesman' ||
+            activeView === 'master-vehicles' ||
+            activeView === 'master-routes' ||
+            activeView === 'master-mappings') && (
             <SalesHub 
               initialTab={activeView}
               onTabChange={(tab) => setActiveView(tab)}
               user={user}
               companySettings={companySettings}
+              selectedBranchId={selectedBranchId}
             />
           )}
 
@@ -360,6 +424,7 @@ export const MainLayout = ({ user, onLogout }) => {
             <InvoiceManagement 
               user={user} 
               companySettings={companySettings} 
+              selectedBranchId={selectedBranchId}
             />
           )}
 
@@ -368,6 +433,7 @@ export const MainLayout = ({ user, onLogout }) => {
             <ReportsHub 
               initialTab={activeView}
               user={user}
+              selectedBranchId={selectedBranchId}
             />
           )}
 
@@ -381,9 +447,9 @@ export const MainLayout = ({ user, onLogout }) => {
           )}
 
           {/* 8. Settings */}
-          {(activeView === 'settings' || activeView === 'settings-company' || activeView === 'settings-templates') && (
+          {(activeView === 'settings' || activeView === 'settings-company' || activeView === 'settings-templates' || activeView === 'settings-branches' || activeView === 'branches') && (
             <SettingsPage 
-              initialTab={activeView === 'settings-templates' ? 'templates' : 'company'}
+              initialTab={activeView === 'settings-templates' ? 'templates' : (activeView === 'settings-branches' || activeView === 'branches') ? 'branches' : 'company'}
               onSettingsUpdate={(updated) => setCompanySettings(updated)}
             />
           )}

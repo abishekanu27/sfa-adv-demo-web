@@ -26,7 +26,7 @@ import './AdvancedBooking.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-export const AdvancedBooking = () => {
+export const AdvancedBooking = ({ selectedBranchId, user }) => {
   const [bookings, setBookings] = useState([]);
   const [metrics, setMetrics] = useState({
     total_bookings: 0,
@@ -89,14 +89,24 @@ export const AdvancedBooking = () => {
   };
 
   // Load Bookings & Dropdowns
-  const loadData = async () => {
+  const loadData = async (branchOverride) => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
       if (statusFilter !== 'all') params.append('status', statusFilter);
       if (searchQuery.trim()) params.append('search', searchQuery.trim());
 
-      const res = await fetch(`${API_BASE}/sales/advance-bookings?${params.toString()}`);
+      const branchToFilter = branchOverride !== undefined ? branchOverride : (selectedBranchId || localStorage.getItem('sf_nexus_active_branch') || (user?.branch_id ? String(user.branch_id) : 'all'));
+      if (branchToFilter && branchToFilter !== 'all') {
+        params.append('branch_id', branchToFilter);
+      }
+
+      const headers = {};
+      if (user?.email) headers['x-user-email'] = user.email;
+      if (user?.id) headers['x-user-id'] = user.id;
+      if (branchToFilter && branchToFilter !== 'all') headers['x-branch-id'] = String(branchToFilter);
+
+      const res = await fetch(`${API_BASE}/sales/advance-bookings?${params.toString()}`, { headers });
       const data = await res.json();
       if (data.success) {
         setBookings(data.bookings || []);
@@ -112,8 +122,10 @@ export const AdvancedBooking = () => {
 
   const loadReferenceData = async () => {
     try {
+      const activeBranch = selectedBranchId || localStorage.getItem('sf_nexus_active_branch') || 'all';
+      const custHeaders = activeBranch && activeBranch !== 'all' ? { 'x-branch-id': String(activeBranch) } : {};
       const [custRes, prodRes, smRes] = await Promise.all([
-        fetch(`${API_BASE}/customers`),
+        fetch(`${API_BASE}/customers${activeBranch && activeBranch !== 'all' ? `?branch_id=${activeBranch}` : ''}`, { headers: custHeaders }),
         fetch(`${API_BASE}/products`),
         fetch(`${API_BASE}/sales/salesmen`)
       ]);
@@ -136,7 +148,17 @@ export const AdvancedBooking = () => {
   };
 
   useEffect(() => {
-    loadData();
+    loadData(selectedBranchId);
+  }, [statusFilter, searchQuery, selectedBranchId]);
+
+  useEffect(() => {
+    const handleBranchChange = (e) => {
+      const bId = e?.detail || localStorage.getItem('sf_nexus_active_branch') || 'all';
+      loadData(bId);
+      loadReferenceData();
+    };
+    window.addEventListener('activeBranchChanged', handleBranchChange);
+    return () => window.removeEventListener('activeBranchChanged', handleBranchChange);
   }, [statusFilter, searchQuery]);
 
   useEffect(() => {
