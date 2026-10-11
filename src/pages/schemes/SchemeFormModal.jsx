@@ -493,7 +493,7 @@ export const SchemeFormModal = ({ isOpen, onClose, onSaved, editScheme = null })
                     <label>Minimum Purchase Amount (₹) *</label>
                     <input 
                       type="number"
-                      step="50"
+                      step="any"
                       min="1"
                       className="scheme-form-input"
                       placeholder="e.g. 5000 or 10000"
