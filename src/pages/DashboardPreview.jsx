@@ -12,7 +12,8 @@ import {
   CheckCircle2,
   AlertCircle,
   BarChart3,
-  Activity
+  Activity,
+  KeyRound
 } from 'lucide-react';
 import { 
   fetchDashboardData, 
@@ -21,12 +22,14 @@ import {
 } from '../services/api';
 import { exportDashboardToExcel } from '../services/excelExport';
 import { PageLoader } from '../components/PageLoader';
+import { ResetPasswordModal } from '../components/ResetPasswordModal';
 import './DashboardPreview.css';
 
 export const DashboardPreview = ({ user, onLogout, isEmbedded = false, selectedBranchId }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showRepModal, setShowRepModal] = useState(false);
   const [notification, setNotification] = useState(null);
@@ -382,6 +385,17 @@ export const DashboardPreview = ({ user, onLogout, isEmbedded = false, selectedB
                       <small className="phone-line">{dashboardData.user.phone}</small>
                     )}
                   </div>
+                  <div className="dropdown-divider"></div>
+                  <button 
+                    className="dropdown-action-item"
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      setShowResetPasswordModal(true);
+                    }}
+                  >
+                    <KeyRound size={14} style={{ color: '#2563eb' }} />
+                    <span>Reset Password</span>
+                  </button>
                   <div className="dropdown-divider"></div>
                   <button 
                     className="dropdown-logout-item"
@@ -1080,6 +1094,20 @@ export const DashboardPreview = ({ user, onLogout, isEmbedded = false, selectedB
           </div>
         </div>
       )}
+
+      {/* Reset Password Modal */}
+      <ResetPasswordModal
+        isOpen={showResetPasswordModal}
+        onClose={() => setShowResetPasswordModal(false)}
+        user={user || dashboardData.user}
+        onPasswordResetSuccess={() => {
+          setNotification({
+            type: 'success',
+            msg: 'Password updated and saved to database successfully!'
+          });
+          setTimeout(() => setNotification(null), 4000);
+        }}
+      />
     </div>
   );
 };

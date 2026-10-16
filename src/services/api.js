@@ -71,6 +71,26 @@ export const fetchMeApi = async () => {
   }
 };
 
+export const resetPasswordApi = async ({ userId, username, email, currentPassword, newPassword, confirmPassword }) => {
+  const res = await fetch(`${API_BASE}/auth/reset-password`, {
+    method: 'POST',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({
+      user_id: userId,
+      username,
+      email,
+      current_password: currentPassword,
+      new_password: newPassword,
+      confirm_password: confirmPassword,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Failed to reset password');
+  }
+  return data;
+};
+
 export const fetchSystemStatus = async () => {
   try {
     const res = await fetch(`${API_BASE}/auth/status`);

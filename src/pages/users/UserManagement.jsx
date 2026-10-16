@@ -84,13 +84,27 @@ export const UserManagement = () => {
         fetchRolesApi(),
         fetchBranchesApi()
       ]);
-      setUsers(uData);
-      setRoles(rData);
+      const visibleUsers = (uData || []).filter(u => 
+        (u.username || '').toLowerCase() !== 'admin' &&
+        (u.role || '').toUpperCase() !== 'ADMIN' &&
+        (u.role_code || '').toUpperCase() !== 'ADMIN' &&
+        u.id !== 'usr_admin_01' &&
+        u.role_id !== 'role_admin' &&
+        (u.email || '').toLowerCase() !== 'admin@salesforce.com' &&
+        (u.email || '').toLowerCase() !== 'admin@softair.co.in'
+      );
+      const visibleRoles = (rData || []).filter(r => 
+        (r.role_code || '').toUpperCase() !== 'ADMIN' &&
+        r.role_id !== 'role_admin' &&
+        (r.role_name || '').toLowerCase() !== 'administrator'
+      );
+      setUsers(visibleUsers);
+      setRoles(visibleRoles);
       setBranches(bData || []);
 
-      // Default role to Salesman or first role if not set
-      if (rData.length > 0 && !formData.role_id) {
-        const salesRole = rData.find(r => r.role_code === 'SALESMAN') || rData[0];
+      // Default role to Salesman or first non-admin role if not set
+      if (visibleRoles.length > 0 && !formData.role_id) {
+        const salesRole = visibleRoles.find(r => r.role_code === 'SALESMAN') || visibleRoles[0];
         setFormData(prev => ({ 
           ...prev, 
           role_id: salesRole.role_id,
@@ -138,8 +152,8 @@ export const UserManagement = () => {
   };
 
   const openCreateModal = () => {
-    const defaultRole = roles.find(r => r.role_code === 'SALESMAN') || roles[0];
-    const isSuperRole = isAdmin && (defaultRole?.role_code === 'ADMIN');
+    const visibleRoles = roles.filter(r => r.role_code !== 'ADMIN' && r.role_id !== 'role_admin' && (r.role_name || '').toLowerCase() !== 'administrator');
+    const defaultRole = visibleRoles.find(r => r.role_code === 'SALESMAN') || visibleRoles[0];
     const defaultBranchId = (!isAdmin && currentUser?.branch_id)
       ? String(currentUser.branch_id)
       : (branches[0]?.branch_id ? String(branches[0].branch_id) : '1');
@@ -156,7 +170,7 @@ export const UserManagement = () => {
       role_id: defaultRole ? defaultRole.role_id : '',
       department: getDefaultDepartmentForRole(defaultRole),
       branch_id: defaultBranchId,
-      all_branches_access: isSuperRole,
+      all_branches_access: false,
       status: 'ACTIVE'
     });
     setIsModalOpen(true);
@@ -173,8 +187,8 @@ export const UserManagement = () => {
       username: user.username || '',
       email: user.email || '',
       phone: user.phone || '',
-      password: user.password || '',
-      confirm_password: user.password || '',
+      password: '',
+      confirm_password: '',
       role_id: user.role_id || '',
       department: user.department || '',
       branch_id: user.branch_id ? String(user.branch_id) : (branches[0]?.branch_id ? String(branches[0].branch_id) : '1'),
@@ -229,6 +243,27 @@ export const UserManagement = () => {
       return;
     }
 
+    const editingId = editingUser ? editingUser.id : null;
+
+    // CLIENT-SIDE DUPLICATE PHONE CHECK FOR USER
+    if (formData.phone && formData.phone.trim()) {
+      const cleanPhone = formData.phone.trim();
+      const phoneDigits = cleanPhone.replace(/\D/g, '');
+      const phoneConflict = users.find(u => {
+        if (editingId && u.id === editingId) return false;
+        if (!u.phone) return false;
+        const exPhone = u.phone.trim();
+        const exDigits = exPhone.replace(/\D/g, '');
+        if (exPhone === cleanPhone) return true;
+        if (phoneDigits.length >= 10 && exDigits.length >= 10 && exDigits.slice(-10) === phoneDigits.slice(-10)) return true;
+        return false;
+      });
+      if (phoneConflict) {
+        showToast(`A user with phone "${cleanPhone}" already exists (${phoneConflict.name}). Duplicate phone is not allowed.`, 'error');
+        return;
+      }
+    }
+
     try {
       const selectedBranchId = parseInt(formData.branch_id, 10) || 1;
       let finalAssignedBranches;
@@ -261,6 +296,10 @@ export const UserManagement = () => {
       };
 
       if (editingUser) {
+        if (!formData.password || !formData.password.trim()) {
+          delete payload.password;
+          delete payload.confirm_password;
+        }
         const res = await updateUserApi(editingUser.id, payload);
         showToast(res.message || 'User updated successfully.');
       } else {
@@ -299,8 +338,20 @@ export const UserManagement = () => {
   const selectedRoleObj = roles.find(r => r.role_id === formData.role_id);
   const isSelectedRoleSalesman = selectedRoleObj?.role_code === 'SALESMAN' || selectedRoleObj?.can_login_web === false;
 
-  // Filtered Users
+  // Filtered Users (Strictly hide internal Admin user account from customer list)
   const filteredUsers = users.filter(u => {
+    if (
+      (u.username || '').toLowerCase() === 'admin' ||
+      (u.role || '').toUpperCase() === 'ADMIN' ||
+      (u.role_code || '').toUpperCase() === 'ADMIN' ||
+      u.id === 'usr_admin_01' ||
+      u.role_id === 'role_admin' ||
+      (u.email || '').toLowerCase() === 'admin@salesforce.com' ||
+      (u.email || '').toLowerCase() === 'admin@softair.co.in'
+    ) {
+      return false;
+    }
+
     const q = searchQuery.toLowerCase();
     const matchesSearch = 
       (u.name || '').toLowerCase().includes(q) ||
@@ -319,11 +370,16 @@ export const UserManagement = () => {
     return matchesSearch && matchesRole && matchesStatus && matchesBranch;
   });
 
-  // Metrics
-  const totalUsers = users.length;
-  const activeUsers = users.filter(u => u.status === 'ACTIVE').length;
-  const salesmanCount = users.filter(u => u.role_code === 'SALESMAN' || u.role === 'SALES_EXECUTIVE' || u.can_login_web === false).length;
-  const adminStaffCount = users.filter(u => u.can_login_web !== false).length;
+  // Metrics (Strictly non-admin accounts)
+  const visibleUsers = users.filter(u => 
+    (u.username || '').toLowerCase() !== 'admin' &&
+    (u.role || '').toUpperCase() !== 'ADMIN' &&
+    u.id !== 'usr_admin_01'
+  );
+  const totalUsers = visibleUsers.length;
+  const activeUsers = visibleUsers.filter(u => u.status === 'ACTIVE').length;
+  const salesmanCount = visibleUsers.filter(u => u.role_code === 'SALESMAN' || u.role === 'SALES_EXECUTIVE' || u.can_login_web === false).length;
+  const adminStaffCount = visibleUsers.filter(u => u.can_login_web !== false).length;
 
   return (
     <div className="users-page-container">
@@ -430,7 +486,7 @@ export const UserManagement = () => {
               className="filter-select"
             >
               <option value="ALL">All Roles</option>
-              {roles.map(r => (
+              {roles.filter(r => r.role_code !== 'ADMIN' && r.role_id !== 'role_admin' && (r.role_name || '').toLowerCase() !== 'administrator').map(r => (
                 <option key={r.role_id} value={r.role_code}>{r.role_name}</option>
               ))}
             </select>
@@ -690,7 +746,7 @@ export const UserManagement = () => {
                     onChange={(e) => handleRoleChangeInForm(e.target.value)}
                     required
                   >
-                    {(isAdmin ? roles : roles.filter(r => r.role_code !== 'ADMIN')).map(r => (
+                    {roles.filter(r => r.role_code !== 'ADMIN' && r.role_id !== 'role_admin' && (r.role_name || '').toLowerCase() !== 'administrator').map(r => (
                       <option key={r.role_id} value={r.role_id}>
                         {r.role_name} {r.can_login_web === false ? '(Mobile Only)' : '(Web Only)'}
                       </option>
@@ -794,13 +850,13 @@ export const UserManagement = () => {
               {/* Password and Confirm Password with Eye Toggles */}
               <div className="form-grid-2">
                 <div className="form-group">
-                  <label>{editingUser ? 'Account Password' : 'Account Password *'}</label>
+                  <label>{editingUser ? 'New Password (Optional)' : 'Account Password *'}</label>
                   <div className="password-input-wrap">
                     <Lock size={15} className="input-inner-icon" />
                     <input 
                       type={showPassword ? 'text' : 'password'}
                       required={!editingUser}
-                      placeholder="Enter account password"
+                      placeholder={editingUser ? "Leave blank to keep existing password" : "Enter account password"}
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     />
@@ -814,13 +870,13 @@ export const UserManagement = () => {
                     </button>
                   </div>
                   {editingUser && (
-                    <span className="field-hint">Click eye icon to reveal or modify password</span>
+                    <span className="field-hint">Leave blank to keep current secure password. Enter new password to update.</span>
                   )}
                 </div>
 
                 <div className="form-group">
                   <div className="label-with-match-status">
-                    <label>{editingUser ? 'Confirm Password' : 'Confirm Password *'}</label>
+                    <label>{editingUser ? 'Confirm New Password' : 'Confirm Password *'}</label>
                     {formData.confirm_password && (
                       formData.password === formData.confirm_password ? (
                         <span className="password-match-tag success"><CheckCircle2 size={11} /> Passwords match</span>
@@ -833,8 +889,8 @@ export const UserManagement = () => {
                     <Lock size={15} className="input-inner-icon" />
                     <input 
                       type={showConfirmPassword ? 'text' : 'password'}
-                      required={!editingUser || !!formData.password}
-                      placeholder="Re-enter password to confirm"
+                      required={!editingUser && !!formData.password}
+                      placeholder={editingUser ? "Confirm new password if changing" : "Re-enter password to confirm"}
                       value={formData.confirm_password}
                       onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
                     />

@@ -217,7 +217,12 @@ export const RoleManagement = () => {
         fetchRolesApi(),
         fetchBranchesApi()
       ]);
-      setRoles(rData);
+      const visible = (rData || []).filter(r => 
+        (r.role_code || '').toUpperCase() !== 'ADMIN' &&
+        r.role_id !== 'role_admin' &&
+        (r.role_name || '').toLowerCase() !== 'administrator'
+      );
+      setRoles(visible);
       setBranches(bData || []);
     } catch (err) {
       showToast(err.message || 'Failed to load roles', 'error');
@@ -365,6 +370,13 @@ export const RoleManagement = () => {
       return;
     }
 
+    const cleanCode = (formData.role_code || '').trim().toUpperCase();
+    const cleanName = (formData.role_name || '').trim().toLowerCase();
+    if (cleanCode === 'ADMIN' || cleanCode === 'SUPER_ADMIN' || cleanName === 'administrator') {
+      showToast('The Administrator role is reserved for internal system administration.', 'error');
+      return;
+    }
+
     const payload = {
       ...formData,
       branch_id: formData.branch_id ? parseInt(formData.branch_id, 10) : null,
@@ -426,11 +438,18 @@ export const RoleManagement = () => {
     }
   };
 
+  // Filter out internal Administrator role
+  const visibleRoles = roles.filter(r => 
+    (r.role_code || '').toUpperCase() !== 'ADMIN' &&
+    r.role_id !== 'role_admin' &&
+    (r.role_name || '').toLowerCase() !== 'administrator'
+  );
+
   // Metrics
-  const totalRoles = roles.length;
-  const webRolesCount = roles.filter(r => r.can_login_web !== false).length;
-  const mobileOnlyCount = roles.filter(r => r.can_login_web === false).length;
-  const systemRolesCount = roles.filter(r => r.is_system).length;
+  const totalRoles = visibleRoles.length;
+  const webRolesCount = visibleRoles.filter(r => r.can_login_web !== false).length;
+  const mobileOnlyCount = visibleRoles.filter(r => r.can_login_web === false).length;
+  const systemRolesCount = visibleRoles.filter(r => r.is_system).length;
 
   return (
     <div className="roles-page-container">
@@ -522,7 +541,7 @@ export const RoleManagement = () => {
             <RefreshCw size={24} className="spin-icon" />
             <p>Loading enterprise roles & permissions...</p>
           </div>
-        ) : roles.map(role => {
+        ) : visibleRoles.map(role => {
           const isMobile = role.can_login_web === false || role.role_code === 'SALESMAN';
           const allowedList = Array.isArray(role.allowed_modules) ? role.allowed_modules : [];
 

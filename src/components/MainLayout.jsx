@@ -8,9 +8,11 @@ import {
   CheckCircle2, 
   AlertCircle,
   Building2,
-  RefreshCw
+  RefreshCw,
+  KeyRound
 } from 'lucide-react';
 import { Sidebar } from './Sidebar';
+import { ResetPasswordModal } from './ResetPasswordModal';
 import { ProductsHub } from '../pages/products/ProductsHub';
 import { PurchasesHub } from '../pages/stock/PurchasesHub';
 import { CustomersHub } from '../pages/customers/CustomersHub';
@@ -48,6 +50,7 @@ export const MainLayout = ({ user, onLogout }) => {
   const [activeCategory, setActiveCategory] = useState('All');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [notification, setNotification] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [companySettings, setCompanySettings] = useState(() => {
@@ -318,6 +321,17 @@ export const MainLayout = ({ user, onLogout }) => {
                   </div>
                   <div className="dropdown-divider"></div>
                   <button 
+                    className="dropdown-action-item"
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      setShowResetPasswordModal(true);
+                    }}
+                  >
+                    <KeyRound size={14} style={{ color: '#2563eb' }} />
+                    <span>Reset Password</span>
+                  </button>
+                  <div className="dropdown-divider"></div>
+                  <button 
                     className="dropdown-logout-item"
                     onClick={onLogout}
                   >
@@ -477,6 +491,20 @@ export const MainLayout = ({ user, onLogout }) => {
           )}
         </main>
       </div>
+
+      {/* Reset Password Modal */}
+      <ResetPasswordModal
+        isOpen={showResetPasswordModal}
+        onClose={() => setShowResetPasswordModal(false)}
+        user={user}
+        onPasswordResetSuccess={() => {
+          setNotification({
+            type: 'success',
+            msg: 'Password updated and saved to database successfully!'
+          });
+          setTimeout(() => setNotification(null), 4000);
+        }}
+      />
     </div>
   );
 };
