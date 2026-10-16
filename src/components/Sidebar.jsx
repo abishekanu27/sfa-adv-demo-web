@@ -18,6 +18,7 @@ import {
   hasMenuPermission, 
   hasPurchasesVendorsPermission 
 } from '../utils/permissions';
+import { DISPLAY_VERSION } from '../version';
 import './Sidebar.css';
 
 export const Sidebar = ({ activeView, onViewChange, onLogout, user, companySettings: propCompanySettings }) => {
@@ -136,13 +137,22 @@ export const Sidebar = ({ activeView, onViewChange, onLogout, user, companySetti
   return (
     <aside className="enterprise-sidebar">
       {/* Brand Header */}
-      <div className="sidebar-brand-header" style={{ justifyContent: 'center', padding: '0 16px' }}>
-        <img 
-          src="/SoftAir_SFA.png"
-          alt="SoftAir SFA" 
-          className="sidebar-brand-logo-img" 
-          style={{ maxHeight: '46px', maxWidth: '180px', width: 'auto', height: 'auto', objectFit: 'contain' }}
-        />
+      <div className="sidebar-brand-header">
+        <div className="sidebar-brand-content">
+          <img 
+            src="/SoftAir_SFA.png"
+            alt="SFA Logo" 
+            className="sidebar-sfa-logo" 
+          />
+          <div className="sidebar-brand-text">
+            <div className="sidebar-title-row">
+              <span className="sidebar-brand-title">SFA</span>
+              <span className="sidebar-edition-badge">Advanced</span>
+              <span className="sidebar-version-badge-top">{DISPLAY_VERSION || 'V1.1.0'}</span>
+            </div>
+            <span className="sidebar-brand-subtitle">Sales Force Automation</span>
+          </div>
+        </div>
       </div>
 
       {/* Navigation List: Unified single-button menus like Reports and Invoices */}
@@ -340,6 +350,19 @@ export const Sidebar = ({ activeView, onViewChange, onLogout, user, companySetti
           </div>
         )}
       </nav>
+
+      {/* Navbar Bottom: Powered by SoftAir Solutions */}
+      <div className="sidebar-footer">
+        <div className="sidebar-footer-left">
+          <span className="sidebar-status-dot" />
+          <div className="sidebar-powered-text">
+            <span className="sidebar-powered-line1">
+              Powered by <strong className="sidebar-softair-brand">SoftAir</strong>
+            </span>
+            <span className="sidebar-solutions-brand">Solutions</span>
+          </div>
+        </div>
+      </div>
     </aside>
   );
 };
