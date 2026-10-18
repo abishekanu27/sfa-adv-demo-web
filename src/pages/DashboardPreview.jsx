@@ -22,7 +22,7 @@ import {
 } from '../services/api';
 import { exportDashboardToExcel } from '../services/excelExport';
 import { PageLoader } from '../components/PageLoader';
-import { ResetPasswordModal } from '../components/ResetPasswordModal';
+import { ResetPasswordModal } from '../components/ResetPasswordModal.jsx';
 import './DashboardPreview.css';
 
 export const DashboardPreview = ({ user, onLogout, isEmbedded = false, selectedBranchId }) => {

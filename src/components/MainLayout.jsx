@@ -12,7 +12,7 @@ import {
   KeyRound
 } from 'lucide-react';
 import { Sidebar } from './Sidebar';
-import { ResetPasswordModal } from './ResetPasswordModal';
+import { ResetPasswordModal } from './ResetPasswordModal.jsx';
 import { ProductsHub } from '../pages/products/ProductsHub';
 import { PurchasesHub } from '../pages/stock/PurchasesHub';
 import { CustomersHub } from '../pages/customers/CustomersHub';
