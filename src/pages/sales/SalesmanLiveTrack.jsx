@@ -91,7 +91,16 @@ export const SalesmanLiveTrack = () => {
     const interval = setInterval(() => {
       loadTrackingData(false);
     }, 12000);
-    return () => clearInterval(interval);
+
+    const handleAppDataSync = () => {
+      loadTrackingData(false);
+    };
+    window.addEventListener('appDataSync', handleAppDataSync);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('appDataSync', handleAppDataSync);
+    };
   }, [autoRefresh]);
 
   // Filters

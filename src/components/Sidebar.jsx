@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { 
   isUserAdmin, 
+  isSuperAdmin,
   hasSubmenuPermission, 
   hasMenuPermission, 
   hasPurchasesVendorsPermission 
@@ -117,8 +118,11 @@ export const Sidebar = ({ activeView, onViewChange, onLogout, user, companySetti
   // 7. Menu 7: Users & Roles
   const isUsersActive = ['users', 'users-list', 'roles-list'].includes(activeView);
 
-  // 8. Menu 8: Settings
-  const isSettingsActive = ['settings', 'settings-company', 'settings-templates', 'settings-branches', 'branches'].includes(activeView);
+  // Branch Management Main Hub
+  const isBranchesActive = ['branches', 'branch-management', 'settings-branches'].includes(activeView);
+
+  // Settings Menu (SuperAdmin Only)
+  const isSettingsActive = ['settings', 'settings-company', 'settings-templates', 'settings-limits'].includes(activeView);
 
   // Role-based module visibility checks
   const canAccessVendors = hasPurchasesVendorsPermission(user);
@@ -172,8 +176,22 @@ export const Sidebar = ({ activeView, onViewChange, onLogout, user, companySetti
           </div>
         )}
 
+        {/* 2. Branch Management (Main Hub After Dashboard) */}
+        {(isSuperAdmin(user) || isUserAdmin(user) || canShowSub('branches')) && (
+          <div className="nav-group-item">
+            <button 
+              className={`nav-main-btn ${isBranchesActive ? 'active' : ''}`}
+              onClick={() => onViewChange('branches')}
+            >
+              <div className="nav-btn-left">
+                <Building2 size={17} className="nav-icon" />
+                <span className="group-title-highlight">Branch Management</span>
+              </div>
+            </button>
+          </div>
+        )}
 
-        {/* 2. Products & Stock */}
+        {/* 3. Products & Stock */}
         {canShowGroup([
           'products-list',
           'stock-categories',
@@ -335,8 +353,8 @@ export const Sidebar = ({ activeView, onViewChange, onLogout, user, companySetti
           </div>
         )}
 
-        {/* 9. Settings */}
-        {canShowGroup(['settings-company', 'settings-templates'], 'settings') && (
+        {/* 10. Settings (STRICTLY SuperAdmin Only - Hidden from Normal Admin) */}
+        {isSuperAdmin(user) && (
           <div className="nav-group-item">
             <button 
               className={`nav-main-btn ${isSettingsActive ? 'active' : ''}`}

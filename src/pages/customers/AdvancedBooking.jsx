@@ -89,9 +89,9 @@ export const AdvancedBooking = ({ selectedBranchId, user }) => {
   };
 
   // Load Bookings & Dropdowns
-  const loadData = async (branchOverride) => {
+  const loadData = async (branchOverride, silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const params = new URLSearchParams();
       if (statusFilter !== 'all') params.append('status', statusFilter);
       if (searchQuery.trim()) params.append('search', searchQuery.trim());
@@ -114,9 +114,9 @@ export const AdvancedBooking = ({ selectedBranchId, user }) => {
       }
     } catch (err) {
       console.error('Error loading advance bookings:', err);
-      showNotification('Failed to load advance bookings', 'error');
+      if (!silent) showNotification('Failed to load advance bookings', 'error');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -157,9 +157,16 @@ export const AdvancedBooking = ({ selectedBranchId, user }) => {
       loadData(bId);
       loadReferenceData();
     };
+    const handleAppDataSync = () => {
+      loadData(undefined, true);
+    };
     window.addEventListener('activeBranchChanged', handleBranchChange);
-    return () => window.removeEventListener('activeBranchChanged', handleBranchChange);
-  }, [statusFilter, searchQuery]);
+    window.addEventListener('appDataSync', handleAppDataSync);
+    return () => {
+      window.removeEventListener('activeBranchChanged', handleBranchChange);
+      window.removeEventListener('appDataSync', handleAppDataSync);
+    };
+  }, [statusFilter, searchQuery, selectedBranchId]);
 
   useEffect(() => {
     loadReferenceData();

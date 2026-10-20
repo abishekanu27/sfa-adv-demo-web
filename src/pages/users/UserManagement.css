@@ -780,3 +780,93 @@
 
 .user-mgmt-toast.success { background-color: #10b981; color: #ffffff; }
 .user-mgmt-toast.error { background-color: #ef4444; color: #ffffff; }
+
+/* Quota Exceeded Alert Modal (Maximum Users Occupied) */
+.quota-modal-backdrop {
+  z-index: 100000 !important;
+  background: rgba(15, 23, 42, 0.65) !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+.quota-exceeded-modal {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 480px;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(220, 38, 38, 0.25), 0 0 0 1px rgba(220, 38, 38, 0.1);
+  animation: quotaPopIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes quotaPopIn {
+  from { opacity: 0; transform: scale(0.92) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.quota-modal-icon-wrap {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: #fee2e2;
+  border: 4px solid #fecaca;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  animation: pulseQuotaIcon 2s infinite ease-in-out;
+}
+
+@keyframes pulseQuotaIcon {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+.quota-modal-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #991b1b;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.01em;
+}
+
+.quota-modal-desc {
+  font-size: 14px;
+  color: #334155;
+  line-height: 1.5;
+  margin: 0 0 16px 0;
+}
+
+.quota-modal-tip {
+  background: #fef2f2;
+  border: 1px dashed #fca5a5;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: #7f1d1d;
+  margin-bottom: 22px;
+  line-height: 1.4;
+}
+
+.quota-modal-close-btn {
+  width: 100%;
+  padding: 11px 20px;
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.quota-modal-close-btn:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
+

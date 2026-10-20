@@ -169,33 +169,39 @@
 }
 
 .user-profile-pill-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 4px 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 9999px;
-  transition: background 0.15s ease;
+  padding: 4px 14px 4px 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 44px;
+  box-sizing: border-box;
 }
 
 .user-profile-pill-btn:hover {
-  background: #f1f5f9;
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
-.purple-avatar-circle {
-  width: 34px;
-  height: 34px;
+.user-avatar-circle {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  background: #2563eb;
   color: #ffffff;
   font-weight: 700;
   font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 5px rgba(124, 58, 237, 0.25);
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.25);
 }
 
 .user-pill-text {
@@ -208,14 +214,33 @@
 .user-pill-name {
   font-size: 13px;
   font-weight: 700;
-  color: #1e293b;
-  line-height: 1.2;
+  color: #0f172a;
+  line-height: 1.15;
 }
 
-.user-pill-role {
-  font-size: 11px;
-  color: #64748b;
+.user-pill-role-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 4px;
+  padding: 0.5px 5.5px;
   line-height: 1.2;
+  text-transform: uppercase;
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+}
+
+.user-pill-chevron {
+  color: #64748b;
+  margin-left: 2px;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.user-pill-chevron.open {
+  transform: rotate(180deg);
 }
 
 /* User Profile Dropdown */

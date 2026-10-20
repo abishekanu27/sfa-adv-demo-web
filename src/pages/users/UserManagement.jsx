@@ -11,6 +11,7 @@ import {
   Trash2, 
   CheckCircle2, 
   AlertCircle, 
+  AlertTriangle,
   X, 
   Lock, 
   Mail, 
@@ -29,7 +30,8 @@ import {
   toggleUserStatusApi, 
   deleteUserApi, 
   fetchRolesApi,
-  fetchBranchesApi
+  fetchBranchesApi,
+  fetchCompanySettings
 } from '../../services/api';
 import { getUserFromStorage, isUserAdmin } from '../../utils/permissions';
 import './UserManagement.css';
@@ -51,6 +53,14 @@ export const UserManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [toast, setToast] = useState(null);
+  const [companySettings, setCompanySettings] = useState(null);
+  const [quotaExceededModal, setQuotaExceededModal] = useState({
+    isOpen: false,
+    channel: '',
+    limit: 0,
+    current: 0,
+    message: ''
+  });
 
   // Password Visibility States
   const [showPassword, setShowPassword] = useState(false);
@@ -79,11 +89,13 @@ export const UserManagement = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [uData, rData, bData] = await Promise.all([
+      const [uData, rData, bData, cSettings] = await Promise.all([
         fetchUsersApi(),
         fetchRolesApi(),
-        fetchBranchesApi()
+        fetchBranchesApi(),
+        fetchCompanySettings().catch(() => null)
       ]);
+      if (cSettings) setCompanySettings(cSettings);
       const visibleUsers = (uData || []).filter(u => 
         (u.username || '').toLowerCase() !== 'admin' &&
         (u.role || '').toUpperCase() !== 'ADMIN' &&
@@ -309,6 +321,17 @@ export const UserManagement = () => {
       setIsModalOpen(false);
       loadData();
     } catch (err) {
+      if (err.maxUsersOccupied || (err.message && err.message.toLowerCase().includes('maximum users occupied'))) {
+        setIsModalOpen(false);
+        setQuotaExceededModal({
+          isOpen: true,
+          channel: err.channel || (isSelectedRoleSalesman ? 'Mobile' : 'Web'),
+          limit: err.limit,
+          current: err.current,
+          message: err.message
+        });
+        return;
+      }
       showToast(err.message || 'Failed to save user.', 'error');
     }
   };
@@ -926,6 +949,33 @@ export const UserManagement = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Maximum Users Occupied Modal Popup */}
+      {quotaExceededModal.isOpen && (
+        <div className="quota-modal-backdrop">
+          <div className="quota-exceeded-modal">
+            <div className="quota-modal-icon-wrap">
+              <AlertTriangle size={36} color="#dc2626" />
+            </div>
+            <h3 className="quota-modal-title">Maximum Users Occupied</h3>
+            <p className="quota-modal-desc">
+              {quotaExceededModal.message || `You have reached the maximum allowed user quota for ${quotaExceededModal.channel || 'this platform'}.`}
+            </p>
+            <div className="quota-modal-tip">
+              <span>
+                To add more users, please contact your <strong>Super Administrator</strong> to increase your user license limit under <strong>Settings &gt; App User Limits &amp; Usage Controls</strong>.
+              </span>
+            </div>
+            <button 
+              type="button" 
+              className="quota-modal-close-btn"
+              onClick={() => setQuotaExceededModal({ isOpen: false, channel: '', limit: 0, current: 0, message: '' })}
+            >
+              Understood
+            </button>
           </div>
         </div>
       )}

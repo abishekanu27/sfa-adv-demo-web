@@ -111,8 +111,8 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings, sel
     setTimeout(() => setToast(null), 3500);
   };
 
-  const loadInvoices = async (branchOverride) => {
-    setLoading(true);
+  const loadInvoices = async (branchOverride, silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const branchToFilter = branchOverride !== undefined ? branchOverride : (selectedBranchId || localStorage.getItem('sf_nexus_active_branch') || (user?.branch_id ? String(user.branch_id) : 'all'));
       const res = await fetchInvoicesApi({
@@ -129,9 +129,9 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings, sel
       }
     } catch (err) {
       console.error('Failed to load invoices:', err);
-      showNotification('Failed to load invoices', 'error');
+      if (!silent) showNotification('Failed to load invoices', 'error');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -159,9 +159,16 @@ export const InvoiceManagement = ({ companySettings: initialCompanySettings, sel
       const bId = e?.detail || localStorage.getItem('sf_nexus_active_branch') || 'all';
       loadInvoices(bId);
     };
+    const handleAppDataSync = () => {
+      loadInvoices(undefined, true);
+    };
     window.addEventListener('activeBranchChanged', handleBranchChange);
-    return () => window.removeEventListener('activeBranchChanged', handleBranchChange);
-  }, [searchQuery, startDate, endDate, statusFilter, invoiceTypeTab]);
+    window.addEventListener('appDataSync', handleAppDataSync);
+    return () => {
+      window.removeEventListener('activeBranchChanged', handleBranchChange);
+      window.removeEventListener('appDataSync', handleAppDataSync);
+    };
+  }, [searchQuery, startDate, endDate, statusFilter, invoiceTypeTab, selectedBranchId]);
 
   useEffect(() => {
     loadDropdowns();

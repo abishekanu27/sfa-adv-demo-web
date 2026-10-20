@@ -13,11 +13,23 @@ export const getUserFromStorage = () => {
 };
 
 /**
- * Checks if the user is an administrator or has all-access superuser rights.
+ * Checks if the user is a Super Administrator (master license & settings access).
+ */
+export const isSuperAdmin = (user) => {
+  if (!user) return false;
+  const role = (user.role || user.role_code || '').toUpperCase();
+  const username = (user.username || '').toLowerCase();
+  return role === 'SUPER_ADMIN' || username === 'admin';
+};
+
+/**
+ * Checks if the user is an administrator or super administrator.
  */
 export const isUserAdmin = (user) => {
   if (!user) return false;
-  if (user.role === 'ADMIN' || user.role_code === 'ADMIN') return true;
+  if (isSuperAdmin(user)) return true;
+  const role = (user.role || user.role_code || '').toUpperCase();
+  if (role === 'ADMIN') return true;
   if (Array.isArray(user.allowed_modules) && user.allowed_modules.includes('all_access')) return true;
   return false;
 };
@@ -26,6 +38,12 @@ export const isUserAdmin = (user) => {
  * Checks if user has access to a specific submenu / feature id.
  */
 export const hasSubmenuPermission = (user, subId, parentId = null) => {
+  // STRICT RULE: Settings menu is restricted ONLY to SuperAdmin!
+  if (parentId === 'settings' || subId === 'settings' || (typeof subId === 'string' && subId.startsWith('settings-'))) {
+    return isSuperAdmin(user);
+  }
+
+  if (isSuperAdmin(user)) return true;
   if (isUserAdmin(user)) return true;
   const modules = user?.allowed_modules;
   if (!Array.isArray(modules)) return false;
@@ -63,6 +81,11 @@ export const hasSubmenuPermission = (user, subId, parentId = null) => {
  * Checks if user has access to any submenu in a group or the parent menu.
  */
 export const hasMenuPermission = (user, subIds = [], parentId = null) => {
+  if (parentId === 'settings' || (Array.isArray(subIds) && subIds.some(id => id === 'settings' || (typeof id === 'string' && id.startsWith('settings-'))))) {
+    return isSuperAdmin(user);
+  }
+
+  if (isSuperAdmin(user)) return true;
   if (isUserAdmin(user)) return true;
   const modules = user?.allowed_modules;
   if (!Array.isArray(modules)) return false;
@@ -100,6 +123,7 @@ export const hasMenuPermission = (user, subIds = [], parentId = null) => {
  * - Vendor reports (Vendor Wise Stock, Vendor Wise Payments) are hidden
  */
 export const hasPurchasesVendorsPermission = (user) => {
+  if (isSuperAdmin(user)) return true;
   if (isUserAdmin(user)) return true;
   const modules = user?.allowed_modules;
   if (!Array.isArray(modules)) return false;
@@ -119,19 +143,22 @@ export const hasPurchasesVendorsPermission = (user) => {
  * Returns the first accessible navigation menu for a user based on their permissions.
  * Priority order matches the Sidebar navigation hierarchy:
  * 1. Dashboard
- * 2. Products & Stock ('products-stock')
- * 3. Purchases & Vendors ('purchases-vendors')
- * 4. Customers ('customers')
- * 5. Sales ('sales')
- * 6. Invoices ('invoices-list')
- * 7. Reports ('reports')
- * 8. Users & Roles ('users')
- * 9. Settings ('settings')
+ * 2. Branch Management ('branches')
+ * 3. Products & Stock ('products-stock')
+ * 4. Purchases & Vendors ('purchases-vendors')
+ * 5. Customers ('customers')
+ * 6. Sales ('sales')
+ * 7. Schemes & Offers ('schemes')
+ * 8. Invoices ('invoices-list')
+ * 9. Reports ('reports')
+ * 10. Users & Roles ('users')
+ * 11. Settings ('settings') - SuperAdmin only
  */
 export const getFirstAccessibleMenu = (user) => {
   if (!user) return 'dashboard';
-  if (isUserAdmin(user)) return 'dashboard';
+  if (isSuperAdmin(user) || isUserAdmin(user)) return 'dashboard';
   if (hasSubmenuPermission(user, 'dashboard')) return 'dashboard';
+  if (hasSubmenuPermission(user, 'branches')) return 'branches';
   if (hasMenuPermission(user, ['products-list', 'stock-categories', 'products-price-groups', 'stock-total', 'stock-warehouses'], 'products-inventory')) return 'products-stock';
   if (hasPurchasesVendorsPermission(user) && hasMenuPermission(user, ['stock-vendors', 'stock-details', 'purchase-orders', 'warehouse-transfers', 'vendor-payments'], 'purchases-vendors')) return 'purchases-vendors';
   if (hasMenuPermission(user, ['customers-details', 'customers-price-mapping', 'customers-advance-booking', 'customers-credit-notes'], 'customers')) return 'customers';
@@ -145,7 +172,7 @@ export const getFirstAccessibleMenu = (user) => {
   if (hasSubmenuPermission(user, 'invoices-list', 'invoices') || hasMenuPermission(user, ['invoices-list'], 'invoices')) return 'invoices-list';
   if (hasSubmenuPermission(user, 'reports')) return 'reports';
   if (hasMenuPermission(user, ['users-list', 'roles-list'], 'users')) return 'users';
-  if (hasSubmenuPermission(user, 'settings') || hasSubmenuPermission(user, 'settings-branches')) return 'settings';
+  if (isSuperAdmin(user) && hasSubmenuPermission(user, 'settings')) return 'settings';
   return 'dashboard';
 };
 

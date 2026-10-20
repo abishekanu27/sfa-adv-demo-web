@@ -853,7 +853,14 @@ export const createUserApi = async (userData) => {
     body: JSON.stringify(userData)
   });
   const json = await res.json();
-  if (!res.ok) throw new Error(json.message || 'Failed to create user');
+  if (!res.ok) {
+    const err = new Error(json.message || 'Failed to create user');
+    err.maxUsersOccupied = Boolean(json.maxUsersOccupied);
+    err.channel = json.channel;
+    err.limit = json.limit;
+    err.current = json.current;
+    throw err;
+  }
   return json;
 };
 

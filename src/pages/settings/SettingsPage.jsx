@@ -20,20 +20,23 @@ import {
   Layers,
   Settings,
   HelpCircle,
-  Shield
+  Shield,
+  Users,
+  Power,
+  AlertTriangle,
+  Lock
 } from 'lucide-react';
 import { fetchCompanySettings, updateCompanySettingsApi } from '../../services/api';
 import { InvoiceTemplateSheet } from '../../components/InvoiceTemplateSheet';
-import { BranchManagement } from './BranchManagement';
 import './SettingsPage.css';
 
 export const SettingsPage = ({ initialTab = 'company', onSettingsUpdate }) => {
-  const [activeTab, setActiveTab] = useState(initialTab); // 'company' | 'templates' | 'branches'
+  const [activeTab, setActiveTab] = useState(initialTab); // 'company' | 'limits' | 'templates'
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
 
-  // Company Profile Form State
+  // Company Profile & App Limits Form State
   const [companyForm, setCompanyForm] = useState({
     company_name: '',
     legal_name: '',
@@ -66,7 +69,13 @@ export const SettingsPage = ({ initialTab = 'company', onSettingsUpdate }) => {
     signature_url: '',
     terms_and_conditions: '1. Goods once sold will not be taken back or exchanged.\n2. Interest @ 18% p.a. will be charged if payment is delayed beyond 15 days.\n3. Subject to Bengaluru jurisdiction only.',
     credit_note_terms: '1. Amount credited to customer ledger balance.\n2. Subject to product quality verification.\n3. Subject to local jurisdiction.',
-    purchase_order_terms: '1. Mention this PO Number on all Delivery Challans and Invoices.\n2. Materials subject to physical inspection & batch testing at inward gate.\n3. Payment will be released within 30 days of GRN generation.'
+    purchase_order_terms: '1. Mention this PO Number on all Delivery Challans and Invoices.\n2. Materials subject to physical inspection & batch testing at inward gate.\n3. Payment will be released within 30 days of GRN generation.',
+    max_web_users: 10,
+    max_mobile_users: 10,
+    web_access_enabled: true,
+    mobile_access_enabled: true,
+    current_web_users_count: 0,
+    current_mobile_users_count: 0
   });
 
   // Invoice Templates Configuration State
@@ -168,6 +177,12 @@ export const SettingsPage = ({ initialTab = 'company', onSettingsUpdate }) => {
           setCompanyForm(prev => ({
             ...prev,
             ...data,
+            max_web_users: (data.max_web_users !== null && data.max_web_users !== undefined) ? Number(data.max_web_users) : prev.max_web_users,
+            max_mobile_users: (data.max_mobile_users !== null && data.max_mobile_users !== undefined) ? Number(data.max_mobile_users) : prev.max_mobile_users,
+            web_access_enabled: (data.web_access_enabled !== null && data.web_access_enabled !== undefined) ? Boolean(data.web_access_enabled) : prev.web_access_enabled,
+            mobile_access_enabled: (data.mobile_access_enabled !== null && data.mobile_access_enabled !== undefined) ? Boolean(data.mobile_access_enabled) : prev.mobile_access_enabled,
+            current_web_users_count: data.current_web_users_count || 0,
+            current_mobile_users_count: data.current_mobile_users_count || 0,
             credit_note_terms: data.credit_note_terms || prev.credit_note_terms,
             purchase_order_terms: data.purchase_order_terms || prev.purchase_order_terms
           }));
@@ -278,17 +293,15 @@ export const SettingsPage = ({ initialTab = 'company', onSettingsUpdate }) => {
         </div>
 
         <div className="settings-header-actions">
-          {activeTab !== 'branches' && (
-            <button 
-              type="button" 
-              className="btn-settings-save"
-              onClick={handleSaveSettings}
-              disabled={saving}
-            >
-              {saving ? <RefreshCw size={16} className="spin-icon" /> : <Save size={16} />}
-              <span>{saving ? 'Saving...' : 'Save All Settings'}</span>
-            </button>
-          )}
+          <button 
+            type="button" 
+            className="btn-settings-save"
+            onClick={handleSaveSettings}
+            disabled={saving}
+          >
+            {saving ? <RefreshCw size={16} className="spin-icon" /> : <Save size={16} />}
+            <span>{saving ? 'Saving...' : 'Save All Settings'}</span>
+          </button>
         </div>
       </div>
 
@@ -299,23 +312,23 @@ export const SettingsPage = ({ initialTab = 'company', onSettingsUpdate }) => {
           onClick={() => setActiveTab('company')}
         >
           <Building2 size={17} />
-          <span>Company Profile & Branding</span>
+          <span>Business Settings &amp; Company Profile</span>
+        </button>
+        <button 
+          className={`settings-tab-btn ${activeTab === 'limits' ? 'tab-active' : ''}`}
+          onClick={() => setActiveTab('limits')}
+        >
+          <Shield size={17} />
+          <span>App User Limits &amp; Usage Controls</span>
+          <span className="tab-pill-badge" style={{ background: '#eff6ff', color: '#2563eb' }}>Quota &amp; Login</span>
         </button>
         <button 
           className={`settings-tab-btn ${activeTab === 'templates' ? 'tab-active' : ''}`}
           onClick={() => setActiveTab('templates')}
         >
           <Printer size={17} />
-          <span>GST & Print Templates Designer</span>
+          <span>GST &amp; Print Templates Designer</span>
           <span className="tab-pill-badge">5 Layouts</span>
-        </button>
-        <button 
-          className={`settings-tab-btn ${activeTab === 'branches' ? 'tab-active' : ''}`}
-          onClick={() => setActiveTab('branches')}
-        >
-          <Building2 size={17} />
-          <span>Branch Management</span>
-          <span className="tab-pill-badge">Multi-Branch</span>
         </button>
       </div>
 
@@ -1197,10 +1210,280 @@ export const SettingsPage = ({ initialTab = 'company', onSettingsUpdate }) => {
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 3: BRANCH MANAGEMENT                                                   */}
+      {/* TAB 2: APP USER LIMITS & USAGE CONTROLS (SUPER ADMIN ONLY)                */}
       {/* ========================================================================= */}
-      {activeTab === 'branches' && (
-        <BranchManagement />
+      {activeTab === 'limits' && (
+        <div className="settings-limits-tab-container">
+          {/* Header Info Banner */}
+          <div className="limits-info-banner">
+            <div className="banner-left-flex">
+              <div className="banner-icon-circ">
+                <Shield size={24} color="#2563eb" />
+              </div>
+              <div>
+                <h3 className="limits-banner-title">Application User Limits &amp; Access Controls</h3>
+                <p className="limits-banner-desc">
+                  Super Administrator Controls: Configure user quotas for Web ERP and Mobile Applications, and toggle channel login access with instant real-time enforcement.
+                </p>
+              </div>
+            </div>
+            <div className="limits-banner-badge">
+              <Sparkles size={14} color="#2563eb" />
+              <span>Super Administrator Exclusive</span>
+            </div>
+          </div>
+
+          <form onSubmit={handleSaveSettings} className="limits-main-form">
+            {/* SECTION 1: USER CREATION LIMITS */}
+            <div className="limits-section-card">
+              <div className="limits-section-head">
+                <div className="section-title-wrap">
+                  <Users size={20} color="#2563eb" />
+                  <div>
+                    <h4>User Creation Quotas (Webapp &amp; Mobile App)</h4>
+                    <p>Enforces maximum accounts allowed. Any attempt to create beyond these limits displays a "Maximum users occupied" popup.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="limits-cards-grid">
+                {/* 1. Webapp User Limit */}
+                <div className="limit-box-card">
+                  <div className="limit-card-header">
+                    <div className="limit-header-left">
+                      <div className="limit-channel-icon web-icon">
+                        <Globe size={18} />
+                      </div>
+                      <div>
+                        <h5>Web Application User Limit</h5>
+                        <span className="limit-target-tag">ERP Office Staff &amp; Admins</span>
+                      </div>
+                    </div>
+                    {companyForm.current_web_users_count >= companyForm.max_web_users ? (
+                      <span className="quota-pill quota-full">Quota Full</span>
+                    ) : (
+                      <span className="quota-pill quota-avail">
+                        {Math.max(0, companyForm.max_web_users - companyForm.current_web_users_count)} Available
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Usage Meter */}
+                  <div className="limit-usage-meter">
+                    <div className="usage-meter-labels">
+                      <span>Current Active Web Users:</span>
+                      <strong>
+                        {companyForm.current_web_users_count || 0} / {companyForm.max_web_users || 0}
+                      </strong>
+                    </div>
+                    <div className="usage-progress-track">
+                      <div 
+                        className={`usage-progress-bar ${companyForm.current_web_users_count >= companyForm.max_web_users ? 'progress-red' : 'progress-blue'}`}
+                        style={{
+                          width: `${Math.min(100, companyForm.max_web_users > 0 ? (companyForm.current_web_users_count / companyForm.max_web_users) * 100 : 0)}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="limit-input-field-group">
+                    <label>Maximum Allowed Webapp Users *</label>
+                    <input 
+                      type="number"
+                      min="0"
+                      max="999"
+                      required
+                      value={companyForm.max_web_users}
+                      onChange={(e) => setCompanyForm({
+                        ...companyForm,
+                        max_web_users: Math.max(0, parseInt(e.target.value, 10) || 0)
+                      })}
+                      className="limit-number-input"
+                    />
+                    <small className="field-hint">
+                      e.g., If set to <strong>2</strong>, the system allows up to 2 web users. Attempting to create a 3rd web user will block creation with a <strong>"Maximum users occupied"</strong> popup.
+                    </small>
+                  </div>
+                </div>
+
+                {/* 2. Mobile App User Limit */}
+                <div className="limit-box-card">
+                  <div className="limit-card-header">
+                    <div className="limit-header-left">
+                      <div className="limit-channel-icon mobile-icon">
+                        <Smartphone size={18} />
+                      </div>
+                      <div>
+                        <h5>Mobile Application User Limit</h5>
+                        <span className="limit-target-tag">Field Sales Representatives</span>
+                      </div>
+                    </div>
+                    {companyForm.current_mobile_users_count >= companyForm.max_mobile_users ? (
+                      <span className="quota-pill quota-full">Quota Full</span>
+                    ) : (
+                      <span className="quota-pill quota-avail">
+                        {Math.max(0, companyForm.max_mobile_users - companyForm.current_mobile_users_count)} Available
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Usage Meter */}
+                  <div className="limit-usage-meter">
+                    <div className="usage-meter-labels">
+                      <span>Current Active Salesmen:</span>
+                      <strong>
+                        {companyForm.current_mobile_users_count || 0} / {companyForm.max_mobile_users || 0}
+                      </strong>
+                    </div>
+                    <div className="usage-progress-track">
+                      <div 
+                        className={`usage-progress-bar ${companyForm.current_mobile_users_count >= companyForm.max_mobile_users ? 'progress-red' : 'progress-purple'}`}
+                        style={{
+                          width: `${Math.min(100, companyForm.max_mobile_users > 0 ? (companyForm.current_mobile_users_count / companyForm.max_mobile_users) * 100 : 0)}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="limit-input-field-group">
+                    <label>Maximum Allowed Mobile App Users *</label>
+                    <input 
+                      type="number"
+                      min="0"
+                      max="999"
+                      required
+                      value={companyForm.max_mobile_users}
+                      onChange={(e) => setCompanyForm({
+                        ...companyForm,
+                        max_mobile_users: Math.max(0, parseInt(e.target.value, 10) || 0)
+                      })}
+                      className="limit-number-input"
+                    />
+                    <small className="field-hint">
+                      e.g., If set to <strong>1</strong>, the system allows only 1 salesman. Attempting to create more will block creation with a <strong>"Maximum users occupied"</strong> popup.
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 2: ACCESS SUSPENSION & ENABLE/DISABLE TOGGLES */}
+            <div className="limits-section-card">
+              <div className="limits-section-head">
+                <div className="section-title-wrap">
+                  <Power size={20} color="#7c3aed" />
+                  <div>
+                    <h4>Channel Login &amp; Usage Control (Web &amp; Mobile)</h4>
+                    <p>Enable or disable usage of Web ERP and Mobile Applications. When disabled, existing credentials cannot be used to log in.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="access-toggles-grid">
+                {/* Toggle 1: Web Application Usage */}
+                <div className={`access-toggle-card ${companyForm.web_access_enabled ? 'enabled' : 'disabled'}`}>
+                  <div className="toggle-card-main">
+                    <div className="toggle-info-col">
+                      <div className="toggle-title-row">
+                        <Globe size={18} color={companyForm.web_access_enabled ? "#2563eb" : "#ef4444"} />
+                        <h5>Web Application Login Access</h5>
+                        <span className={`status-pill ${companyForm.web_access_enabled ? 'pill-green' : 'pill-red'}`}>
+                          {companyForm.web_access_enabled ? 'Active / Enabled' : 'Disabled / Suspended'}
+                        </span>
+                      </div>
+                      <p className="toggle-card-desc">
+                        {companyForm.web_access_enabled 
+                          ? 'Web ERP Portal is operational. Office staff and administrators can log in normally.'
+                          : '⚠️ Web ERP access is disabled! Non-superadmin users cannot log in with their credentials.'}
+                      </p>
+                    </div>
+
+                    <label className="switch-toggle-label">
+                      <input 
+                        type="checkbox"
+                        checked={Boolean(companyForm.web_access_enabled)}
+                        onChange={async (e) => {
+                          const val = e.target.checked;
+                          setCompanyForm(prev => ({ ...prev, web_access_enabled: val }));
+                          try {
+                            await updateCompanySettingsApi({
+                              ...companyForm,
+                              web_access_enabled: val
+                            });
+                            showNotification(
+                              val 
+                                ? 'Web ERP access ENABLED in backend! Users can now log in.' 
+                                : 'Web ERP access DISABLED in backend! Office user login is blocked.'
+                            );
+                          } catch (err) {
+                            showNotification(err.message || 'Failed to update web access state in backend', 'error');
+                          }
+                        }}
+                      />
+                      <span className="switch-slider"></span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Toggle 2: Mobile Application Usage */}
+                <div className={`access-toggle-card ${companyForm.mobile_access_enabled ? 'enabled' : 'disabled'}`}>
+                  <div className="toggle-card-main">
+                    <div className="toggle-info-col">
+                      <div className="toggle-title-row">
+                        <Smartphone size={18} color={companyForm.mobile_access_enabled ? "#7c3aed" : "#ef4444"} />
+                        <h5>Mobile Application Login Access</h5>
+                        <span className={`status-pill ${companyForm.mobile_access_enabled ? 'pill-green' : 'pill-red'}`}>
+                          {companyForm.mobile_access_enabled ? 'Active / Enabled' : 'Disabled / Suspended'}
+                        </span>
+                      </div>
+                      <p className="toggle-card-desc">
+                        {companyForm.mobile_access_enabled 
+                          ? 'Mobile Application is operational. Field sales representatives can log in and sync field routes.'
+                          : '⚠️ Mobile App access is disabled! Field salesmen cannot log in with their credentials.'}
+                      </p>
+                    </div>
+
+                    <label className="switch-toggle-label">
+                      <input 
+                        type="checkbox"
+                        checked={Boolean(companyForm.mobile_access_enabled)}
+                        onChange={async (e) => {
+                          const val = e.target.checked;
+                          setCompanyForm(prev => ({ ...prev, mobile_access_enabled: val }));
+                          try {
+                            await updateCompanySettingsApi({
+                              ...companyForm,
+                              mobile_access_enabled: val
+                            });
+                            showNotification(
+                              val 
+                                ? 'Mobile Application access ENABLED in backend! Field login is active.' 
+                                : 'Mobile Application access DISABLED in backend! Field login is now blocked.'
+                            );
+                          } catch (err) {
+                            showNotification(err.message || 'Failed to update mobile access state in backend', 'error');
+                          }
+                        }}
+                      />
+                      <span className="switch-slider"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="form-submit-row">
+              <button 
+                type="submit" 
+                className="btn-settings-save large-save-btn"
+                disabled={saving}
+              >
+                {saving ? <RefreshCw size={17} className="spin-icon" /> : <Save size={17} />}
+                <span>{saving ? 'Saving...' : 'Save App User Limits & Access Controls'}</span>
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
     </div>

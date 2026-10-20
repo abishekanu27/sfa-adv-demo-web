@@ -13,7 +13,8 @@ import {
   AlertCircle,
   BarChart3,
   Activity,
-  KeyRound
+  KeyRound,
+  ChevronDown
 } from 'lucide-react';
 import { 
   fetchDashboardData, 
@@ -23,6 +24,7 @@ import {
 import { exportDashboardToExcel } from '../services/excelExport';
 import { PageLoader } from '../components/PageLoader';
 import { ResetPasswordModal } from '../components/ResetPasswordModal.jsx';
+import { TopNavTimeWidget } from '../components/TopNavTimeWidget';
 import './DashboardPreview.css';
 
 export const DashboardPreview = ({ user, onLogout, isEmbedded = false, selectedBranchId }) => {
@@ -99,8 +101,8 @@ export const DashboardPreview = ({ user, onLogout, isEmbedded = false, selectedB
     fieldRepresentatives: []
   });
 
-  const loadData = (branchOverride) => {
-    setIsLoading(true);
+  const loadData = (branchOverride, silent = false) => {
+    if (!silent) setIsLoading(true);
     const branchToFetch = branchOverride !== undefined ? branchOverride : (selectedBranchId || localStorage.getItem('active_branch_id') || 'all');
     fetchDashboardData(user?.email, branchToFetch)
       .then(data => {
@@ -122,7 +124,7 @@ export const DashboardPreview = ({ user, onLogout, isEmbedded = false, selectedB
         console.error('Failed to load dashboard data:', err);
       })
       .finally(() => {
-        setIsLoading(false);
+        if (!silent) setIsLoading(false);
       });
   };
 
@@ -135,11 +137,16 @@ export const DashboardPreview = ({ user, onLogout, isEmbedded = false, selectedB
       const newBranchId = e?.detail?.branch_id || localStorage.getItem('active_branch_id') || 'all';
       loadData(newBranchId);
     };
+    const handleAppDataSync = () => {
+      loadData(undefined, true);
+    };
     window.addEventListener('activeBranchChanged', handleBranchChange);
+    window.addEventListener('appDataSync', handleAppDataSync);
     return () => {
       window.removeEventListener('activeBranchChanged', handleBranchChange);
+      window.removeEventListener('appDataSync', handleAppDataSync);
     };
-  }, [user]);
+  }, [user, selectedBranchId]);
 
   const showToast = (msg, type = 'success') => {
     setNotification({ msg, type });
@@ -219,9 +226,17 @@ export const DashboardPreview = ({ user, onLogout, isEmbedded = false, selectedB
     }
   };
 
-  const displayName = dashboardData.user?.name || 'Administrator';
+  const isSuper = user?.role === 'SUPER_ADMIN' || user?.role_code === 'SUPER_ADMIN' || dashboardData.user?.role === 'SUPER_ADMIN';
+  const displayName = isSuper
+    ? (dashboardData.user?.name && dashboardData.user.name !== 'admin' && dashboardData.user.name !== 'Administrator' ? dashboardData.user.name : 'Super Administrator')
+    : (dashboardData.user?.name || 'Administrator');
   const displayRole = dashboardData.user?.role || 'Administrator';
-  const avatarLetter = displayName.charAt(0).toUpperCase() || 'A';
+  const displayRoleBadge = (() => {
+    if (isSuper) return 'SUPER_ADMIN';
+    if (user?.role === 'ADMIN' || user?.role_code === 'ADMIN' || displayRole === 'ADMIN') return 'ADMIN';
+    return (user?.role_code || user?.role || displayRole || 'USER').toUpperCase();
+  })();
+  const avatarLetter = displayName.charAt(0).toUpperCase() || 'S';
 
   // Trajectory Timeframe & Chart Style States
   const [trajectoryTimeframe, setTrajectoryTimeframe] = useState('month'); // 'week' | 'month' | 'quarter' | 'year'
@@ -360,19 +375,24 @@ export const DashboardPreview = ({ user, onLogout, isEmbedded = false, selectedB
               <span className="notification-amber-dot"></span>
             </button>
 
+            {/* Live Time Clock Widget (Right near User as in reference image) */}
+            <TopNavTimeWidget />
+
             {/* User Profile Pill */}
             <div className="user-profile-pill-container">
               <button 
                 className="user-profile-pill-btn"
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
+                title="User Profile & Account Options"
               >
-                <div className="purple-avatar-circle">
+                <div className="user-avatar-circle">
                   {avatarLetter}
                 </div>
                 <div className="user-pill-text">
                   <span className="user-pill-name">{displayName}</span>
-                  <span className="user-pill-role">{displayRole}</span>
+                  <span className="user-pill-role-badge">{displayRoleBadge}</span>
                 </div>
+                <ChevronDown size={15} className={`user-pill-chevron ${showUserDropdown ? 'open' : ''}`} />
               </button>
 
               {/* Profile Dropdown */}

@@ -253,8 +253,8 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
     }));
   };
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const effectiveBranch = (!isAdmin && userBranchId) ? userBranchId : selectedBranchFilter;
       const [custList, custMetrics, pgs, brList, whList] = await Promise.all([
@@ -272,7 +272,7 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
     } catch (err) {
       console.error('Error loading customer data:', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -291,9 +291,16 @@ export const CustomerDetails = ({ onGoToPriceMapping, onIssueCreditNote, selecte
         setSelectedBranchFilter(String(bId));
       }
     };
+    const handleAppDataSync = () => {
+      loadData(true);
+    };
     window.addEventListener('activeBranchChanged', handleActiveBranchChanged);
-    return () => window.removeEventListener('activeBranchChanged', handleActiveBranchChanged);
-  }, [isAdmin]);
+    window.addEventListener('appDataSync', handleAppDataSync);
+    return () => {
+      window.removeEventListener('activeBranchChanged', handleActiveBranchChanged);
+      window.removeEventListener('appDataSync', handleAppDataSync);
+    };
+  }, [isAdmin, searchQuery, selectedGroupFilter, selectedStatusFilter, taxFilter, selectedBranchFilter]);
 
   useEffect(() => {
     loadData();

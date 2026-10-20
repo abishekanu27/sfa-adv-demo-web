@@ -10,6 +10,7 @@ import {
   Trash2,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   X,
   Lock,
   Mail,
@@ -57,6 +58,13 @@ export const SalesmanMaster = ({ selectedBranchId }) => {
   const [toast, setToast] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [quotaExceededModal, setQuotaExceededModal] = useState({
+    isOpen: false,
+    channel: 'Mobile',
+    limit: 0,
+    current: 0,
+    message: ''
+  });
 
   // Form State
   const [formData, setFormData] = useState({
@@ -278,6 +286,17 @@ export const SalesmanMaster = ({ selectedBranchId }) => {
       setIsModalOpen(false);
       loadData();
     } catch (err) {
+      if (err.maxUsersOccupied || (err.message && err.message.toLowerCase().includes('maximum users occupied'))) {
+        setIsModalOpen(false);
+        setQuotaExceededModal({
+          isOpen: true,
+          channel: 'Mobile',
+          limit: err.limit,
+          current: err.current,
+          message: err.message
+        });
+        return;
+      }
       showToast(err.message || 'Failed to save salesman', 'error');
     } finally {
       setIsSubmitting(false);
@@ -735,6 +754,32 @@ export const SalesmanMaster = ({ selectedBranchId }) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Maximum Users Occupied Modal Popup */}
+      {quotaExceededModal.isOpen && (
+        <div className="quota-modal-backdrop">
+          <div className="quota-exceeded-modal">
+            <div className="quota-modal-icon-wrap">
+              <AlertTriangle size={36} color="#dc2626" />
+            </div>
+            <h3 className="quota-modal-title">Maximum Users Occupied</h3>
+            <p className="quota-modal-desc">
+              {quotaExceededModal.message || 'You have reached the maximum allowed Mobile application user quota for salesmen.'}
+            </p>
+            <div className="quota-modal-tip">
+              <span>
+                To add more salesmen, please contact your <strong>Super Administrator</strong> to increase the Mobile User limit in <strong>Settings &gt; App User Limits &amp; Usage Controls</strong>.
+              </span>
+            </div>
+            <button 
+              type="button" 
+              className="quota-modal-close-btn"
+              onClick={() => setQuotaExceededModal({ isOpen: false, channel: 'Mobile', limit: 0, current: 0, message: '' })}
+            >
+              Understood
+            </button>
           </div>
         </div>
       )}
