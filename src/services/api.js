@@ -8,8 +8,10 @@ export const getAuthHeaders = (customHeaders = {}) => {
       const u = JSON.parse(rawUser);
       if (u.email) headers['x-user-email'] = u.email;
       if (u.id) headers['x-user-id'] = u.id;
+      if (u.role) headers['x-user-role'] = u.role;
+      if (u.username) headers['x-username'] = u.username;
       // If user is non-admin, strictly enforce their assigned branch
-      const isAdmin = u.role === 'ADMIN' || u.role === 'SUPER_ADMIN' || u.role_code === 'ADMIN' || (Array.isArray(u.allowed_modules) && u.allowed_modules.includes('all_access'));
+      const isAdmin = u.role === 'ADMIN' || u.role === 'SUPER_ADMIN' || u.role_code === 'ADMIN' || u.role_code === 'SUPER_ADMIN' || (Array.isArray(u.allowed_modules) && u.allowed_modules.includes('all_access'));
       if (!isAdmin && u.branch_id) {
         headers['x-branch-id'] = String(u.branch_id);
       }
@@ -106,7 +108,8 @@ export const fetchSystemStatus = async () => {
 
 export const fetchCompanySettings = async () => {
   try {
-    const res = await fetch(`${API_BASE}/settings/company`);
+    const headers = getAuthHeaders();
+    const res = await fetch(`${API_BASE}/settings/company`, { headers });
     if (!res.ok) throw new Error('Failed to fetch company branding');
     const data = await res.json();
     if (data.settings) {
@@ -136,9 +139,10 @@ export const fetchCompanySettings = async () => {
 };
 
 export const updateCompanySettingsApi = async (settings) => {
+  const headers = getAuthHeaders({ 'Content-Type': 'application/json' });
   const res = await fetch(`${API_BASE}/settings/company`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(settings),
   });
 
