@@ -704,13 +704,9 @@ export const UserManagement = () => {
               {/* Salesman Mobile Advisory Banner */}
               {isSelectedRoleSalesman && (
                 <div className="salesman-advisory-alert">
-                  <Smartphone size={20} className="alert-icon" />
+                  <Smartphone size={16} className="alert-icon" />
                   <div className="alert-text">
-                    <strong>Salesman Account (Mobile Only):</strong>
-                    <p>
-                      This user is strictly restricted to <strong>Mobile Application access only</strong> and cannot log into this Web ERP portal. 
-                      Once saved, this salesman is <strong>immediately selectable</strong> in Salesman & Route Mapping and Van Stock Allocation!
-                    </p>
+                    <strong>Salesman Account (Mobile Only):</strong> Restricted to mobile app access only. Immediately selectable in Route Mapping & Van Stock Allocation once saved.
                   </div>
                 </div>
               )}
