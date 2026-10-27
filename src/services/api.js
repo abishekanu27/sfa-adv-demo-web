@@ -8,7 +8,7 @@ export const getAuthHeaders = (customHeaders = {}) => {
       const u = JSON.parse(rawUser);
       if (u.email) headers['x-user-email'] = u.email;
       if (u.id) headers['x-user-id'] = u.id;
-      if (u.role) headers['x-user-role'] = u.role;
+      if (u.role || u.role_code) headers['x-user-role'] = u.role || u.role_code;
       if (u.username) headers['x-username'] = u.username;
       // If user is non-admin, strictly enforce their assigned branch
       const isAdmin = u.role === 'ADMIN' || u.role === 'SUPER_ADMIN' || u.role_code === 'ADMIN' || u.role_code === 'SUPER_ADMIN' || (Array.isArray(u.allowed_modules) && u.allowed_modules.includes('all_access'));
@@ -1084,7 +1084,7 @@ export const fetchBranchByIdApi = async (id) => {
 export const createBranchApi = async (branchData) => {
   const res = await fetch(`${API_BASE}/branches`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(branchData)
   });
   let data;
@@ -1100,7 +1100,7 @@ export const createBranchApi = async (branchData) => {
 export const updateBranchApi = async (id, branchData) => {
   const res = await fetch(`${API_BASE}/branches/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(branchData)
   });
   let data;
@@ -1115,7 +1115,8 @@ export const updateBranchApi = async (id, branchData) => {
 
 export const toggleBranchStatusApi = async (id) => {
   const res = await fetch(`${API_BASE}/branches/${id}/status`, {
-    method: 'PATCH'
+    method: 'PATCH',
+    headers: getAuthHeaders()
   });
   let data;
   try {
@@ -1129,7 +1130,8 @@ export const toggleBranchStatusApi = async (id) => {
 
 export const deleteBranchApi = async (id) => {
   const res = await fetch(`${API_BASE}/branches/${id}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: getAuthHeaders()
   });
   let data;
   try {
